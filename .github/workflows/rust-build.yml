@@ -3,7 +3,7 @@ name: Rust Build and Export
 # 触发条件：当推送到 main 分支，或者手动触发
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "build-0.1.0" ]
   workflow_dispatch: # 允许你在 GitHub 页面上手动点击按钮触发编译
 
 jobs:
