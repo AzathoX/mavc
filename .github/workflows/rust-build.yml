@@ -1,0 +1,38 @@
+name: Rust Build and Export
+
+# 触发条件：当推送到 main 分支，或者手动触发
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # 允许你在 GitHub 页面上手动点击按钮触发编译
+
+jobs:
+  build:
+    name: Build Rust Binary
+    # 选择运行环境（这里用 Ubuntu，如果要编译 Windows 的 .exe 可以改成 windows-latest）
+    runs-on: windows-latest
+
+    steps:
+    # 1. 拉取你的代码
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2. 设置 Rust 环境（GitHub 官方提供的 Action 会自动安装最新版 Rust 和 Cargo）
+    - name: Set up Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    # 3. 开启 Rust 编译缓存，这能让以后每次编译速度提升 5 倍以上
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
+
+    # 4. 执行编译命令（Release 优化版本）
+    - name: Run Cargo Build
+      run: cargo build --release
+
+    # 5. 上传编译好的二进制文件到 GitHub，作为下载产物 (Artifact)
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: rust-release-binary       # 下载时压缩包的名字
+        path: target/release/           # 想要导出的文件路径
+        retention-days: 7               # 在 GitHub 上保留 7 天，过期自动删除
