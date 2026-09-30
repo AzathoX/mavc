@@ -26,6 +26,8 @@ Usage:
   mavc music -m <audio-file>... [-a <output.mavc>]
   mavc music -a <output.mavc> -m <audio-file>...
   mavc create <manifest.json> <output.mavc>
+  mavc [-+|--add] <音频文件>... --to <归档.mavc>...
+  mavc [-x|--remove] <曲目编号>... --from <归档.mavc>...
   mavc list <archive.mavc>
   mavc play [-r|--random | -o|--one <track-id>] [-sp|--system-player | -bp|--browser-player] <archive.mavc>
   mavc inspect <archive.mavc> [track-id]
@@ -39,10 +41,22 @@ Usage:
 
 - **`help`、`--help`、`-h`** — 显示命令用法。
 - **`version`、`--version`、`-V`、`-v`** — 显示 MAVC 版本。
-- **`package -m <文件>... [-a <输出.mavc>]`** — 将音频文件打包成归档。省略 `-a` 时，单个文件生成 `<文件名>.mavc`，多个文件生成 `music.mavc`。
+- **`package -m <文件>... [-a <输出.mavc>]`** — 将音频文件打包成归档，初始权重均分（每首为 `1 / 曲目数`）。省略 `-a` 时，单个文件生成 `<文件名>.mavc`，多个文件生成 `music.mavc`。
 - **`package <manifest.json> <输出.mavc>`** — 按 JSON 清单中的曲目信息打包。
-- **`music -m <文件>... [-a <输出.mavc>]`** — 打包音乐列表的快捷命令。`-m` 和 `-a` 选项可以按任意顺序排列。
+- **`music -m <文件>... [-a <输出.mavc>]`** — 打包音乐列表的快捷命令，初始权重均分（每首为 `1 / 曲目数`）。`-m` 和 `-a` 选项可以按任意顺序排列。
 - **`create <manifest.json> <输出.mavc>`** — 使用清单打包的别名命令。
+- **`--add` / `-+ <文件>... --to <归档>...`** — 向每个归档添加音频文件；更新后的归档最多包含 5 首曲目，音频数据总量不超过 150 MB。新曲目权重为 1。
+- **`--remove` / `-x <曲目编号>... --from <归档>...`** — 从每个归档删除至少两个指定编号的曲目。
+
+归档限制从当前工作目录的 `mavc.toml` 读取。文件不存在时，默认最多 5 首、150 MB。配置示例：
+
+```toml
+[limits]
+max_tracks = 5
+max_size_mb = 150
+```
+
+`max_size_mb` 使用十进制 MB（1 MB = 1,000,000 字节），限制的是音频数据总量。
 - **`list <归档.mavc>`** — 列出曲目编号、格式和权重。
 - **`play [-r|--random] <归档.mavc>`** — 按曲目权重随机选择，并使用 MAVC 内置播放器播放。随机播放为默认模式。
 - **`play -o|--one <曲目编号> <归档.mavc>`** — 播放指定编号的曲目。
@@ -50,7 +64,7 @@ Usage:
 - **`play -bp|--browser-player <归档.mavc>`** — 在当前工作目录下的 `mavc-browser-*` 文件夹中保存临时音频文件和 HTML 播放页面，然后用默认浏览器打开。浏览器可能会阻止自动播放，此时请点击播放按钮。
 - **`inspect <归档.mavc> [曲目编号]`** 或 **`inspect <曲目编号> <归档.mavc>`** — 显示归档信息和可用曲目元数据，例如标题、歌手、专辑、流派、年份、时长、比特率、采样率、声道数和位深。缺失的标签不会显示。
 - **`pick <归档.mavc>`** — 按权重随机选择一首曲目并显示信息，但不播放。
-- **`weight <归档.mavc> <曲目编号>=<权重>`** — 修改归档中曲目的随机播放权重，并显示修改前后的数值。权重必须是有限且不小于零的数字；设为 `0` 可让该曲目不参与随机选择。
+- **`weight <归档.mavc> <曲目编号>=<权重>`** — 将指定曲目的随机播放权重设为 0 到 1，再将剩余权重平均分给其他曲目。例如，4 首曲目中将一首设为 `0.4`，其他每首会设为 `0.2`。设为 `0` 时该曲目不会被随机选中；设为 `1` 时其他曲目权重均为 `0`。
 - **`extract <归档.mavc> <曲目编号> [输出文件]`** — 提取曲目。若未指定输出文件名，MAVC 会使用曲目原有文件名和扩展名。
 
 `-r`/`--random` 和 `-o`/`--one` 不能同时使用。浏览器播放器也兼容旧拼写

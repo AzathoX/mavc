@@ -29,6 +29,8 @@ Usage:
   mavc music -m <audio-file>... [-a <output.mavc>]
   mavc music -a <output.mavc> -m <audio-file>...
   mavc create <manifest.json> <output.mavc>
+  mavc [-+|--add] <audio-file>... --to <archive.mavc>...
+  mavc [-x|--remove] <track-id>... --from <archive.mavc>...
   mavc list <archive.mavc>
   mavc play [-r|--random | -o|--one <track-id>] [-sp|--system-player | -bp|--browser-player] <archive.mavc>
   mavc inspect <archive.mavc> [track-id]
@@ -42,10 +44,22 @@ Usage:
 
 - **`help`, `--help`, `-h`** — Show command usage.
 - **`version`, `--version`, `-V`, `-v`** — Show the MAVC version.
-- **`package -m <files>... [-a <output.mavc>]`** — Package audio files. Without `-a`, one file produces `<filename>.mavc`; multiple files produce `music.mavc`.
+- **`package -m <files>... [-a <output.mavc>]`** — Package audio files with equal initial weights (`1 / track count`). Without `-a`, one file produces `<filename>.mavc`; multiple files produce `music.mavc`.
 - **`package <manifest.json> <output.mavc>`** — Package tracks described by a JSON manifest.
-- **`music -m <files>... [-a <output.mavc>]`** — Shortcut for packaging a music list. The `-m` and `-a` options may appear in either order.
+- **`music -m <files>... [-a <output.mavc>]`** — Shortcut for packaging a music list with equal initial weights (`1 / track count`). The `-m` and `-a` options may appear in either order.
 - **`create <manifest.json> <output.mavc>`** — Alias for manifest-based packaging.
+- **`--add` / `-+ <files>... --to <archives>...`** — Add audio files to each archive; each resulting archive may contain at most 5 tracks and 150 MB of audio payload. New tracks start with weight 1.
+- **`--remove` / `-x <track-ids>... --from <archives>...`** — Remove at least two specified track IDs from each archive.
+
+Archive limits are read from `mavc.toml` in the current working directory. If the file is absent, MAVC uses 5 tracks and 150 MB by default. Configure them with:
+
+```toml
+[limits]
+max_tracks = 5
+max_size_mb = 150
+```
+
+`max_size_mb` uses decimal megabytes (1 MB = 1,000,000 bytes) and applies to audio payload size.
 - **`list <archive.mavc>`** — List tracks and show their IDs, formats, and weights.
 - **`play [-r|--random] <archive.mavc>`** — Choose a track by its weight and play it with MAVC's built-in player. Random playback is the default.
 - **`play -o|--one <track-id> <archive.mavc>`** — Play one specified track ID.
@@ -53,7 +67,7 @@ Usage:
 - **`play -bp|--browser-player <archive.mavc>`** — Save a temporary audio file and HTML player page in a `mavc-browser-*` folder under the current working directory, then open the page in the default browser. Browser autoplay settings may require clicking Play.
 - **`inspect <archive.mavc> [track-id]`** or **`inspect <track-id> <archive.mavc>`** — Show archive information and available track metadata, such as title, artist/singer, album, genre, year, duration, bitrate, sample rate, channels, and bit depth. Missing tags are omitted.
 - **`pick <archive.mavc>`** — Print a weighted random track selection without playing it.
-- **`weight <archive.mavc> <track-id>=<weight>`** — Update a track's random-selection weight in the archive and report the old and new values. Weight must be finite and non-negative; use `0` to exclude a track from random selection.
+- **`weight <archive.mavc> <track-id>=<weight>`** — Set one track's random-selection weight from 0 to 1, then divide the remaining weight evenly among all other tracks. For example, in a four-track archive, setting one track to `0.4` sets each other track to `0.2`. Weight `0` excludes the selected track from random selection; weight `1` excludes all other tracks.
 - **`extract <archive.mavc> <track-id> [output-file]`** — Extract a track. If no output filename is given, MAVC uses the track's stored filename and extension.
 
 `-r`/`--random` and `-o`/`--one` are mutually exclusive. The browser player also

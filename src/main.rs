@@ -1,4 +1,7 @@
-use mavc::{Archive, AudioMetadata, CreateManifest, Description, TrackSource, create_archive};
+use mavc::{
+    Archive, AudioMetadata, CreateManifest, Description, TrackSource, add_tracks, create_archive,
+    remove_tracks,
+};
 use rodio::{Decoder, DeviceSinkBuilder, Player};
 use std::env;
 use std::fs::File;
@@ -18,6 +21,8 @@ fn usage() {
            mavc music -m <audio-file>... [-a <output.mavc>]\n\
            mavc music -a <output.mavc> -m <audio-file>...\n\
            mavc create <manifest.json> <output.mavc>\n\
+           mavc [-+|--add] <audio-file>... --to <archive.mavc>...\n\
+           mavc [-x|--remove] <track-id>... --from <archive.mavc>...\n\
            mavc list <archive.mavc>\n\
            mavc play [-r|--random | -o|--one <track-id>] [-sp|--system-player | -bp|--browser-player] <archive.mavc>\n\
            mavc inspect <archive.mavc> [track-id]\n\
@@ -56,6 +61,54 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         usage();
         return Err("package expects a music list or a manifest and output path".into());
+    }
+    if matches!(args.get(1).map(String::as_str), Some("--add" | "-+")) {
+        let delimiter = args
+            .iter()
+            .position(|arg| arg == "--to")
+            .ok_or("add requires --to followed by archive paths")?;
+        let files = args[2..delimiter]
+            .iter()
+            .map(PathBuf::from)
+            .collect::<Vec<_>>();
+        let archives = args
+            .get(delimiter + 1..)
+            .unwrap_or_default()
+            .iter()
+            .map(PathBuf::from)
+            .collect::<Vec<_>>();
+        if archives.is_empty() {
+            return Err("add requires at least one --to archive".into());
+        }
+        add_tracks(&archives, &files)?;
+        for path in archives {
+            println!("Updated {}", path.display());
+        }
+        return Ok(());
+    }
+    if matches!(args.get(1).map(String::as_str), Some("--remove" | "-x")) {
+        let delimiter = args
+            .iter()
+            .position(|arg| arg == "--from")
+            .ok_or("remove requires --from followed by archive paths")?;
+        let ids = args[2..delimiter]
+            .iter()
+            .map(|arg| arg.parse::<usize>())
+            .collect::<Result<Vec<_>, _>>()?;
+        let archives = args
+            .get(delimiter + 1..)
+            .unwrap_or_default()
+            .iter()
+            .map(PathBuf::from)
+            .collect::<Vec<_>>();
+        if archives.is_empty() {
+            return Err("remove requires at least one --from archive".into());
+        }
+        remove_tracks(&archives, &ids)?;
+        for path in archives {
+            println!("Updated {}", path.display());
+        }
+        return Ok(());
     }
     // Keep the shorter form available as well: mavc -m file.mp3
     if matches!(args.get(1).map(String::as_str), Some("-m" | "--music-list")) {
@@ -417,6 +470,7 @@ fn create_from_music_list(args: &[String]) -> Result<(), Box<dyn std::error::Err
         .and_then(|s| s.to_str())
         .unwrap_or("music")
         .to_owned();
+    let initial_weight = 1.0 / inputs.len() as f64;
     let tracks = inputs
         .into_iter()
         .map(|path| {
@@ -428,7 +482,7 @@ fn create_from_music_list(args: &[String]) -> Result<(), Box<dyn std::error::Err
             TrackSource {
                 path,
                 title,
-                weight: 1.0,
+                weight: initial_weight,
             }
         })
         .collect::<Vec<_>>();
