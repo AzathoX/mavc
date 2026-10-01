@@ -29,7 +29,7 @@ Usage:
   mavc [-+|--add] <音频文件>... --to <归档.mavc>...
   mavc [-x|--remove] <曲目编号>... --from <归档.mavc>...
   mavc list <archive.mavc>
-  mavc play [-r|--random | -o|--one <track-id>] [-sp|--system-player | -bp|--browser-player] <archive.mavc>
+  mavc play [-r|--random | -o|--one <track-id> | -c|--combine <track-id> <track-id>...] [--all] [-bp|--browser-player] <archive.mavc>
   mavc inspect <archive.mavc> [track-id]
   mavc inspect <track-id> <archive.mavc>
   mavc pick <archive.mavc>
@@ -60,8 +60,9 @@ max_size_mb = 150
 - **`list <归档.mavc>`** — 列出曲目编号、格式和权重。
 - **`play [-r|--random] <归档.mavc>`** — 按曲目权重随机选择，并使用 MAVC 内置播放器播放。随机播放为默认模式。
 - **`play -o|--one <曲目编号> <归档.mavc>`** — 播放指定编号的曲目。
-- **`play -sp|--system-player <归档.mavc>`** — 临时提取选中的曲目，并用系统关联的音频应用打开。
-- **`play -bp|--browser-player <归档.mavc>`** — 在当前工作目录下的 `mavc-browser-*` 文件夹中保存临时音频文件和 HTML 播放页面，然后用默认浏览器打开。浏览器可能会阻止自动播放，此时请点击播放按钮。
+- **`play --all <归档.mavc>`** — 使用 MAVC 内置播放器按归档顺序播放全部曲目。
+- **`play -c|--combine <曲目编号>... <归档.mavc>`** — 使用 MAVC 内置播放器同时混音播放至少两首指定曲目。
+- **`play -bp|--browser-player <归档.mavc>`** — 将归档中的曲目和 HTML 选择页面保存到临时文件夹，再用默认浏览器打开。浏览器可能会阻止自动播放，此时请点击播放按钮。
 - **`inspect <归档.mavc> [曲目编号]`** 或 **`inspect <曲目编号> <归档.mavc>`** — 显示归档信息和可用曲目元数据，例如标题、歌手、专辑、流派、年份、时长、比特率、采样率、声道数和位深。缺失的标签不会显示。
 - **`pick <归档.mavc>`** — 按权重随机选择一首曲目并显示信息，但不播放。
 - **`weight <归档.mavc> <曲目编号>=<权重>`** — 将指定曲目的随机播放权重设为 0 到 1，再将剩余权重平均分给其他曲目。例如，4 首曲目中将一首设为 `0.4`，其他每首会设为 `0.2`。设为 `0` 时该曲目不会被随机选中；设为 `1` 时其他曲目权重均为 `0`。

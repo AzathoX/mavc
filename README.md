@@ -32,7 +32,7 @@ Usage:
   mavc [-+|--add] <audio-file>... --to <archive.mavc>...
   mavc [-x|--remove] <track-id>... --from <archive.mavc>...
   mavc list <archive.mavc>
-  mavc play [-r|--random | -o|--one <track-id>] [-sp|--system-player | -bp|--browser-player] <archive.mavc>
+  mavc play [-r|--random | -o|--one <track-id> | -c|--combine <track-id> <track-id>...] [--all] [-bp|--browser-player] <archive.mavc>
   mavc inspect <archive.mavc> [track-id]
   mavc inspect <track-id> <archive.mavc>
   mavc pick <archive.mavc>
@@ -63,8 +63,9 @@ max_size_mb = 150
 - **`list <archive.mavc>`** — List tracks and show their IDs, formats, and weights.
 - **`play [-r|--random] <archive.mavc>`** — Choose a track by its weight and play it with MAVC's built-in player. Random playback is the default.
 - **`play -o|--one <track-id> <archive.mavc>`** — Play one specified track ID.
-- **`play -sp|--system-player <archive.mavc>`** — Extract the selected track temporarily and open it with the system's associated audio app.
-- **`play -bp|--browser-player <archive.mavc>`** — Save a temporary audio file and HTML player page in a `mavc-browser-*` folder under the current working directory, then open the page in the default browser. Browser autoplay settings may require clicking Play.
+- **`play --all <archive.mavc>`** — Play every track in archive order with MAVC's built-in player.
+- **`play -c|--combine <track-ids>... <archive.mavc>`** — Mix at least two specified tracks at the same time with MAVC's built-in player.
+- **`play -bp|--browser-player <archive.mavc>`** — Save the archive's tracks and an HTML selection page in a temporary folder, then open the page in the default browser. Browser autoplay settings may require clicking Play.
 - **`inspect <archive.mavc> [track-id]`** or **`inspect <track-id> <archive.mavc>`** — Show archive information and available track metadata, such as title, artist/singer, album, genre, year, duration, bitrate, sample rate, channels, and bit depth. Missing tags are omitted.
 - **`pick <archive.mavc>`** — Print a weighted random track selection without playing it.
 - **`weight <archive.mavc> <track-id>=<weight>`** — Set one track's random-selection weight from 0 to 1, then divide the remaining weight evenly among all other tracks. For example, in a four-track archive, setting one track to `0.4` sets each other track to `0.2`. Weight `0` excludes the selected track from random selection; weight `1` excludes all other tracks.

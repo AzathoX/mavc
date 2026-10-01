@@ -125,20 +125,23 @@ pub struct PlayArgs {
     /// Play every track in archive order.
     #[arg(long, conflicts_with_all = ["random", "one"])]
     pub all: bool,
-    /// Open the extracted track with the system's audio player.
-    #[arg(short = 's', long = "system-player", conflicts_with = "browser_player")]
-    pub system_player: bool,
+    /// Mix two or more tracks at the same time.
+    #[arg(
+        short = 'c',
+        long,
+        value_name = "TRACK_ID",
+        num_args = 2..,
+        conflicts_with_all = ["random", "one", "all", "browser_player"]
+    )]
+    pub combine: Vec<usize>,
     /// Open a temporary browser player page.
     #[arg(
         short = 'b',
         long = "browser-player",
         alias = "broswer-player",
-        conflicts_with = "system_player"
+        conflicts_with_all = ["random", "one", "combine"]
     )]
     pub browser_player: bool,
-    /// Accept the historical two-letter short options `-sp` and `-bp`.
-    #[arg(short = 'p', hide = true)]
-    pub legacy_player_suffix: bool,
     pub archive: PathBuf,
 }
 

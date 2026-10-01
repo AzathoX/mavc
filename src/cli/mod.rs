@@ -6,12 +6,14 @@ mod output;
 mod player;
 
 pub fn run() -> Result<(), Box<dyn std::error::Error>> {
-    // Preserve the requested single-hyphen spelling while using clap's
-    // canonical `--all` option internally.
+    // Preserve single-hyphen command spellings while using clap's canonical
+    // long options internally.
     let mut argv = std::env::args_os().collect::<Vec<_>>();
     for argument in &mut argv {
         if argument == "-all" {
             *argument = "--all".into();
+        } else if argument == "-bp" {
+            *argument = "--browser-player".into();
         }
     }
     let cli = args::Cli::parse_from(argv);
