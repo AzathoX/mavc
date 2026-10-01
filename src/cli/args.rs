@@ -46,7 +46,7 @@ pub enum Commands {
     Pick(ArchiveArgs),
     /// Update a track's selection weight.
     Weight(WeightArgs),
-    /// Extract a track from an archive.
+    /// Extract one track or all tracks from an archive.
     Extract(ExtractArgs),
     /// Legacy shortcut: `mavc -m file.mp3`.
     #[command(short_flag = 'm', long_flag = "music-list", hide = true)]
@@ -160,6 +160,10 @@ pub struct WeightArgs {
 #[derive(Debug, Args)]
 pub struct ExtractArgs {
     pub archive: PathBuf,
-    pub track_id: usize,
+    /// Extract every track into the current directory (`-all` is also accepted).
+    #[arg(long, conflicts_with_all = ["track_id", "output"])]
+    pub all: bool,
+    #[arg(required_unless_present = "all")]
+    pub track_id: Option<usize>,
     pub output: Option<PathBuf>,
 }

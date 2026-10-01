@@ -67,24 +67,62 @@ pub(super) fn run(command: Commands) -> Result<(), Box<dyn std::error::Error>> {
         }
         Commands::Extract(args) => {
             let archive = Archive::open(&args.archive)?;
-            let output = match args.output {
-                Some(path) => path,
-                None => {
-                    let track = archive
-                        .index
-                        .tracks
-                        .iter()
-                        .find(|track| track.id == args.track_id)
-                        .ok_or_else(|| format!("no track with id {}", args.track_id))?;
-                    PathBuf::from(
-                        Path::new(&track.file_name)
-                            .file_name()
-                            .ok_or("track has no usable filename")?,
-                    )
+            if args.all {
+                if archive.index.tracks.is_empty() {
+                    return Err("archive has no tracks to extract".into());
                 }
-            };
-            archive.extract_track(&args.archive, args.track_id, &output)?;
-            println!("Extracted track {} to {}", args.track_id, output.display());
+                let current_dir = std::env::current_dir()?;
+                let mut outputs = std::collections::HashSet::new();
+                for track in &archive.index.tracks {
+                    let name = Path::new(&track.file_name)
+                        .file_name()
+                        .ok_or("track has no usable filename")?;
+                    let collision_key = name.to_string_lossy().to_lowercase();
+                    if !outputs.insert(collision_key) {
+                        return Err(format!(
+                            "multiple tracks have the filename {}; cannot extract all without overwriting",
+                            name.to_string_lossy()
+                        )
+                        .into());
+                    }
+                    let output = current_dir.join(name);
+                    if output.exists() {
+                        return Err(format!(
+                            "{} already exists; refusing to overwrite it",
+                            output.display()
+                        )
+                        .into());
+                    }
+                }
+                for track in &archive.index.tracks {
+                    let name = Path::new(&track.file_name)
+                        .file_name()
+                        .ok_or("track has no usable filename")?;
+                    let output = current_dir.join(name);
+                    archive.extract_track(&args.archive, track.id, &output)?;
+                    println!("Extracted track {} to {}", track.id, output.display());
+                }
+            } else {
+                let track_id = args.track_id.expect("clap requires track_id unless --all");
+                let output = match args.output {
+                    Some(path) => path,
+                    None => {
+                        let track = archive
+                            .index
+                            .tracks
+                            .iter()
+                            .find(|track| track.id == track_id)
+                            .ok_or_else(|| format!("no track with id {track_id}"))?;
+                        PathBuf::from(
+                            Path::new(&track.file_name)
+                                .file_name()
+                                .ok_or("track has no usable filename")?,
+                        )
+                    }
+                };
+                archive.extract_track(&args.archive, track_id, &output)?;
+                println!("Extracted track {track_id} to {}", output.display());
+            }
         }
         Commands::Play(args) => super::player::play_random(args)?,
     }
