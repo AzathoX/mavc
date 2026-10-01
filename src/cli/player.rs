@@ -11,15 +11,24 @@ pub(super) fn play_random(args: PlayArgs) -> Result<(), Box<dyn std::error::Erro
     let archive = Archive::open(&args.archive)?;
     let tracks = archive.index.tracks.clone();
 
-    // The browser player is the only alternate output; otherwise use Rodio.
+    // Playlist exports handle an entire archive. Combining is built in; when
+    // requested with the system player, explain the fallback and mix in Rodio.
     if args.browser_player {
         return open_browser_playlist(&args.archive, &archive.describe.title, &tracks);
     }
+    if !args.combine.is_empty() {
+        if args.system_player {
+            eprintln!(
+                "warning: --combine cannot be opened as a system playlist; using the built-in player"
+            );
+        }
+        return play_combined(&args.archive, &archive.describe.title, &args.combine);
+    }
+    if args.system_player {
+        return import_system_playlist(&args.archive, &tracks);
+    }
     if args.all {
         return play_all_in_order(&args.archive, &archive.describe.title, &tracks);
-    }
-    if !args.combine.is_empty() {
-        return play_combined(&args.archive, &archive.describe.title, &args.combine);
     }
 
     let selection = if let Some(id) = args.one {
@@ -122,6 +131,35 @@ fn format_duration(duration_ms: u64) -> String {
     format!("{:02}:{:02}", seconds / 60, seconds % 60)
 }
 
+fn import_system_playlist(
+    archive_path: &Path,
+    tracks: &[Track],
+) -> Result<(), Box<dyn std::error::Error>> {
+    if tracks.is_empty() {
+        return Err("archive has no tracks".into());
+    }
+    let directory = create_temp_dir("mavc-playlist")?;
+    let mut playlist = String::from("#EXTM3U\n");
+    for track in tracks {
+        let file_name = track_file_name(track);
+        let mut selected = play().archive(archive_path).one(track.id).stream()?;
+        io::copy(
+            &mut selected.bytes,
+            &mut File::create(directory.join(&file_name))?,
+        )?;
+        playlist.push_str(&format!("#EXTINF:-1,{}\n{}\n", track.title, file_name));
+    }
+    let playlist_path = directory.join("playlist.m3u8");
+    File::create(&playlist_path)?.write_all(playlist.as_bytes())?;
+    open_with_system_player(&playlist_path)?;
+    println!(
+        "Opened playlist with {} tracks: {}",
+        tracks.len(),
+        playlist_path.display()
+    );
+    Ok(())
+}
+
 fn open_browser_playlist(
     archive_path: &Path,
     room_title: &str,
@@ -216,6 +254,29 @@ fn escape_html(text: &str) -> String {
         .replace('>', "&gt;")
         .replace('"', "&quot;")
         .replace('\'', "&#39;")
+}
+
+#[cfg(target_os = "macos")]
+fn open_with_system_player(path: &Path) -> io::Result<()> {
+    Command::new("open").arg(path).spawn().map(|_| ())
+}
+
+#[cfg(target_os = "windows")]
+fn open_with_system_player(path: &Path) -> io::Result<()> {
+    Command::new("explorer.exe").arg(path).spawn().map(|_| ())
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn open_with_system_player(path: &Path) -> io::Result<()> {
+    Command::new("xdg-open").arg(path).spawn().map(|_| ())
+}
+
+#[cfg(not(any(unix, target_os = "windows")))]
+fn open_with_system_player(_path: &Path) -> io::Result<()> {
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "opening a system playlist is unsupported on this platform",
+    ))
 }
 
 #[cfg(target_os = "macos")]

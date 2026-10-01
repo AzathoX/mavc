@@ -1,6 +1,6 @@
 [package]
 name = "mavc"
-version = "0.1.0"
+version = "0.5.0"
 edition = "2024"
 description = "Create and inspect weighted-playlist MAVC music archives"
 license = "Apache-2.0"

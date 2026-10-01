@@ -134,6 +134,9 @@ pub struct PlayArgs {
         conflicts_with_all = ["random", "one", "all", "browser_player"]
     )]
     pub combine: Vec<usize>,
+    /// Import the archive tracks into a playlist opened by the system player.
+    #[arg(short = 's', long = "system-player", conflicts_with = "browser_player")]
+    pub system_player: bool,
     /// Open a temporary browser player page.
     #[arg(
         short = 'b',

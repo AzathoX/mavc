@@ -32,7 +32,7 @@ Usage:
   mavc [-+|--add] <audio-file>... --to <archive.mavc>...
   mavc [-x|--remove] <track-id>... --from <archive.mavc>...
   mavc list <archive.mavc>
-  mavc play [-r|--random | -o|--one <track-id> | -c|--combine <track-id> <track-id>...] [--all] [-bp|--browser-player] <archive.mavc>
+  mavc play [-r|--random | -o|--one <track-id> | -c|--combine <track-id> <track-id>...] [--all] [-sp|--system-player | -bp|--browser-player] <archive.mavc>
   mavc inspect <archive.mavc> [track-id]
   mavc inspect <track-id> <archive.mavc>
   mavc pick <archive.mavc>
@@ -65,6 +65,7 @@ max_size_mb = 150
 - **`play -o|--one <track-id> <archive.mavc>`** — Play one specified track ID.
 - **`play --all <archive.mavc>`** — Play every track in archive order with MAVC's built-in player.
 - **`play -c|--combine <track-ids>... <archive.mavc>`** — Mix at least two specified tracks at the same time with MAVC's built-in player.
+- **`play -sp|--system-player <archive.mavc>`** — Export all tracks to a temporary playlist and open it with the system's associated player. With `--combine`, MAVC warns and uses its built-in player.
 - **`play -bp|--browser-player <archive.mavc>`** — Save the archive's tracks and an HTML selection page in a temporary folder, then open the page in the default browser. Browser autoplay settings may require clicking Play.
 - **`inspect <archive.mavc> [track-id]`** or **`inspect <track-id> <archive.mavc>`** — Show archive information and available track metadata, such as title, artist/singer, album, genre, year, duration, bitrate, sample rate, channels, and bit depth. Missing tags are omitted.
 - **`pick <archive.mavc>`** — Print a weighted random track selection without playing it.
