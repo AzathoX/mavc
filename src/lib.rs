@@ -314,11 +314,6 @@ pub fn remove_tracks(archive_paths: &[PathBuf], track_ids: &[usize]) -> Result<(
         ));
     }
     let ids: std::collections::HashSet<usize> = track_ids.iter().copied().collect();
-    if ids.len() < 2 {
-        return Err(Error::Invalid(
-            "remove requires at least 2 track IDs".into(),
-        ));
-    }
     let ids: Vec<usize> = ids.into_iter().collect();
     for path in archive_paths {
         rewrite_archive(path, &[], &ids)?;
