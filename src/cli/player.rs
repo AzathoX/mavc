@@ -14,6 +14,9 @@ pub(super) fn play_random(args: PlayArgs) -> Result<(), Box<dyn std::error::Erro
     // Playlist exports handle an entire archive. Combining is built in; when
     // requested with the system player, explain the fallback and mix in Rodio.
     if args.browser_player {
+        if !args.combine.is_empty() {
+            return open_browser_combine(&args.archive, &archive.describe.title, &args.combine);
+        }
         return open_browser_playlist(&args.archive, &archive.describe.title, &tracks);
     }
     if !args.combine.is_empty() {
@@ -193,6 +196,53 @@ fn open_browser_playlist(
     println!(
         "Opened track selection page with {} tracks: {}",
         tracks.len(),
+        html_path.display()
+    );
+    Ok(())
+}
+
+fn open_browser_combine(
+    archive_path: &Path,
+    room_title: &str,
+    track_ids: &[usize],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let directory = create_temp_dir("mavc-browser-combine")?;
+    let mut entries = String::new();
+    for &track_id in track_ids {
+        let mut selected = play().archive(archive_path).one(track_id).stream()?;
+        let file_name = track_file_name(&selected.track);
+        io::copy(
+            &mut selected.bytes,
+            &mut File::create(directory.join(&file_name))?,
+        )?;
+        entries.push_str(&track_info_html(room_title, &selected.track, &file_name));
+    }
+    let html = format!(
+        "<!doctype html><html lang=\"zh-Hant\"><meta charset=\"utf-8\">\
+         <title>音樂館 Music Room</title><body>\
+         <h1>🎵 音樂館 Music Room：{}</h1>\
+         <h2>歌曲信息 / Track info</h2>\
+         <button type=\"button\" onclick=\"playTogether()\">同時播放以上歌曲 / Play together</button>\
+         <main>{entries}</main><script>\
+         const audios = [...document.querySelectorAll('audio')];\
+         const audioContext = new AudioContext();\
+         for (const audio of audios) {{\
+           audioContext.createMediaElementSource(audio).connect(audioContext.destination);\
+         }}\
+         async function playTogether() {{\
+           await audioContext.resume();\
+           for (const audio of audios) audio.currentTime = 0;\
+           await Promise.all(audios.map(audio => audio.play()));\
+         }}\
+         </script></body></html>",
+        escape_html(room_title)
+    );
+    let html_path = directory.join("player.html");
+    File::create(&html_path)?.write_all(html.as_bytes())?;
+    open_in_default_browser(&html_path)?;
+    println!(
+        "Opened browser mixer for {} tracks: {}",
+        track_ids.len(),
         html_path.display()
     );
     Ok(())

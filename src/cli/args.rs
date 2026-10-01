@@ -131,7 +131,7 @@ pub struct PlayArgs {
         long,
         value_name = "TRACK_ID",
         num_args = 2..,
-        conflicts_with_all = ["random", "one", "all", "browser_player"]
+        conflicts_with_all = ["random", "one", "all"]
     )]
     pub combine: Vec<usize>,
     /// Import the archive tracks into a playlist opened by the system player.
@@ -142,7 +142,7 @@ pub struct PlayArgs {
         short = 'b',
         long = "browser-player",
         alias = "broswer-player",
-        conflicts_with_all = ["random", "one", "combine"]
+        conflicts_with_all = ["random", "one"]
     )]
     pub browser_player: bool,
     pub archive: PathBuf,

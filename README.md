@@ -64,7 +64,7 @@ max_size_mb = 150
 - **`play [-r|--random] <archive.mavc>`** — Choose a track by its weight and play it with MAVC's built-in player. Random playback is the default.
 - **`play -o|--one <track-id> <archive.mavc>`** — Play one specified track ID.
 - **`play --all <archive.mavc>`** — Play every track in archive order with MAVC's built-in player.
-- **`play -c|--combine <track-ids>... <archive.mavc>`** — Mix at least two specified tracks at the same time with MAVC's built-in player.
+- **`play -c|--combine <track-ids>... <archive.mavc>`** — Mix at least two specified tracks at the same time. Add `-bp` to mix them in the browser; `-sp` shows a warning and falls back to the built-in player.
 - **`play -sp|--system-player <archive.mavc>`** — Export all tracks to a temporary playlist and open it with the system's associated player. With `--combine`, MAVC warns and uses its built-in player.
 - **`play -bp|--browser-player <archive.mavc>`** — Save the archive's tracks and an HTML selection page in a temporary folder, then open the page in the default browser. Browser autoplay settings may require clicking Play.
 - **`inspect <archive.mavc> [track-id]`** or **`inspect <track-id> <archive.mavc>`** — Show archive information and available track metadata, such as title, artist/singer, album, genre, year, duration, bitrate, sample rate, channels, and bit depth. Missing tags are omitted.
