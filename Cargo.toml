@@ -6,6 +6,7 @@ description = "Create and inspect weighted-playlist MAVC music archives"
 license = "Apache-2.0"
 
 [dependencies]
+clap = { version = "4.6", features = ["derive"] }
 lofty = "0.25.4"
 rand = "0.8"
 rodio = { version = "0.22.2", default-features = false, features = ["playback", "symphonia-flac", "symphonia-mp3", "symphonia-aac", "symphonia-isomp4"] }

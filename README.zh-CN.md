@@ -78,6 +78,62 @@ max_size_mb = 150
 之后依次为 JSON 格式的描述信息、索引以及拼接后的音频数据。索引中的曲目偏移量
 以音频数据区起始位置为基准。目前归档格式和 MVLC 索引版本均为 `1`。
 
+### 代码结构
+
+```mermaid
+flowchart TD
+    CLI["src/cli<br/>参数、命令分派、输出和播放"] --> API["src/api<br/>高阶 Rust builder"]
+    CLI --> CORE["src/core<br/>归档操作与格式实现"]
+    API --> CORE
+    CORE --> MODEL["数据模型 + 元数据"]
+    CORE --> FORMAT["格式 + 归档读取器"]
+    CORE --> CONFIG["配置 + 错误类型"]
+```
+
+`src/lib.rs` 重新导出公开类型和操作，因此调用者可以使用
+`mavc::Archive`、`mavc::create_archive` 或更高阶的 `mavc::music()` builder，
+不必依赖内部模块路径。
+
+### 归档布局
+
+```mermaid
+flowchart LR
+    H["文件头 · 22 字节<br/>MAVC · 版本 · 描述长度<br/>索引长度 · 音频数据长度"]
+    D["描述 JSON<br/>长度由文件头记录"]
+    I["MVLC 索引 JSON<br/>长度由文件头记录"]
+    P["音频数据区<br/>按曲目顺序拼接原始音频字节"]
+    H --> D --> I --> P
+```
+
+索引中的每首曲目都有 `offset` 和 `length`。`offset` 相对于音频数据区起点，
+因此曲目在文件中的绝对位置为：
+
+```text
+payload_start = 22 + description_length + index_length
+track_position = payload_start + track.offset
+```
+
+索引还保存曲目编号、显示名称、原始文件名、编码格式、权重和缓存的音频元数据。
+描述和索引都是 UTF-8 JSON；音频区保存原始编码后的音频字节，不做转码。这个字节
+布局与编程语言无关，其他语言的实现只要遵循相同的字段长度、字节序、JSON 字段和
+偏移量规则，就可以读写 MAVC 文件。
+
+### 创建流程
+
+```mermaid
+flowchart TD
+    C["CLI music 命令或 Rust music() 调用者"] --> B["music().from(files).output(path)"]
+    B --> M["CreateManifest<br/>描述信息 + 曲目来源"]
+    M --> V["校验输入<br/>分配编号、权重和偏移量"]
+    V --> J["将描述信息与 MVLC 索引序列化为 JSON"]
+    J --> W["写入 22 字节文件头和 JSON 区段"]
+    W --> A["按曲目顺序追加原始音频字节"]
+    A --> F[".mavc 归档"]
+```
+
+公开的 `music()` builder 会先准备清单，再调用与 CLI 相同的核心归档写入器。写入器
+先记录相对于音频区起点的曲目偏移量，再将各来源文件流式写入音频区。
+
 ## Windows
 
 请先使用 rustup 安装 Rust，然后在项目目录的 PowerShell 中运行：

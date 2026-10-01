@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-Have you ever noticed that a song can have several versions, such as English
+Hi,Have you ever noticed that a song can have several versions, such as English
 and Chinese versions, covers by different singers, or alternate arrangements?
 Each version takes several minutes to play, so listening through all of them
 can take a while. MAVC packages related versions into one `.mavc` archive and
@@ -82,6 +82,65 @@ magic, container version (`u16`), description length (`u32`), MVLC index length
 objects, followed by the concatenated audio payloads. Track offsets in the
 index are relative to the beginning of the payload section. The container and
 MVLC index version are both currently `1`.
+
+### Code layout
+
+```mermaid
+flowchart TD
+    CLI["src/cli<br/>arguments, command dispatch, output, playback"] --> API["src/api<br/>high-level Rust builders"]
+    CLI --> CORE["src/core<br/>archive operations and format implementation"]
+    API --> CORE
+    CORE --> MODEL["model + metadata"]
+    CORE --> FORMAT["format + archive reader"]
+    CORE --> CONFIG["configuration + errors"]
+```
+
+`src/lib.rs` re-exports the public types and operations, so callers can use
+`mavc::Archive`, `mavc::create_archive`, or the higher-level
+`mavc::music()` builder without depending on internal module paths.
+
+### Archive layout
+
+```mermaid
+flowchart LR
+    H["Header · 22 bytes<br/>MAVC · version · description length<br/>index length · payload length"]
+    D["Description JSON<br/>byte length from header"]
+    I["MVLC index JSON<br/>byte length from header"]
+    P["Audio payload<br/>original track bytes concatenated"]
+    H --> D --> I --> P
+```
+
+Each index track stores an `offset` and `length`. The offset is relative to the
+start of the audio payload, so its absolute file position is:
+
+```text
+payload_start = 22 + description_length + index_length
+track_position = payload_start + track.offset
+```
+
+The index also stores each track's ID, display title, original filename, codec,
+weight, and cached audio metadata. The description and index are UTF-8 JSON;
+the audio section contains the original encoded audio bytes without
+transcoding. This byte layout is language-neutral, so other implementations
+can read and write MAVC files by following the same field sizes, byte order,
+JSON fields, and offset rules.
+
+### Creation flow
+
+```mermaid
+flowchart TD
+    C["CLI music command or Rust music() caller"] --> B["music().from(files).output(path)"]
+    B --> M["CreateManifest<br/>description + track sources"]
+    M --> V["Validate inputs<br/>assign IDs, weights, offsets"]
+    V --> J["Serialize description and MVLC index as JSON"]
+    J --> W["Write 22-byte header and JSON sections"]
+    W --> A["Append original audio bytes in track order"]
+    A --> F[".mavc archive"]
+```
+
+The public `music()` builder prepares a manifest and delegates to the same
+core archive writer used by the CLI. The writer records payload-relative
+offsets before streaming each source file into the payload section.
 
 ## Windows
 

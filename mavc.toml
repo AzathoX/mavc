@@ -1,0 +1,6 @@
+[limits]
+# Maximum number of tracks in an archive after adding tracks.
+max_tracks = 5
+
+# Maximum total audio payload size per archive, in decimal megabytes (1 MB = 1,000,000 bytes).
+max_size_mb = 150
