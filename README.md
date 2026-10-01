@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-Have you ever noticed that a song can have several versions, such as English
+Hi,Have you ever noticed that a song can have several versions, such as English
 and Chinese versions, covers by different singers, or alternate arrangements?
 Each version takes several minutes to play, so listening through all of them
 can take a while. MAVC packages related versions into one `.mavc` archive and
@@ -29,8 +29,10 @@ Usage:
   mavc music -m <audio-file>... [-a <output.mavc>]
   mavc music -a <output.mavc> -m <audio-file>...
   mavc create <manifest.json> <output.mavc>
+  mavc [-+|--add] <audio-file>... --to <archive.mavc>...
+  mavc [-x|--remove] <track-id>... --from <archive.mavc>...
   mavc list <archive.mavc>
-  mavc play [-r|--random | -o|--one <track-id>] [-sp|--system-player | -bp|--browser-player] <archive.mavc>
+  mavc play [-r|--random | -o|--one <track-id> | -c|--combine <track-id> <track-id>...] [--all] [-sp|--system-player | -bp|--browser-player] <archive.mavc>
   mavc inspect <archive.mavc> [track-id]
   mavc inspect <track-id> <archive.mavc>
   mavc pick <archive.mavc>
@@ -42,18 +44,32 @@ Usage:
 
 - **`help`, `--help`, `-h`** — Show command usage.
 - **`version`, `--version`, `-V`, `-v`** — Show the MAVC version.
-- **`package -m <files>... [-a <output.mavc>]`** — Package audio files. Without `-a`, one file produces `<filename>.mavc`; multiple files produce `music.mavc`.
+- **`package -m <files>... [-a <output.mavc>]`** — Package audio files with equal initial weights (`1 / track count`). Without `-a`, one file produces `<filename>.mavc`; multiple files produce `music.mavc`.
 - **`package <manifest.json> <output.mavc>`** — Package tracks described by a JSON manifest.
-- **`music -m <files>... [-a <output.mavc>]`** — Shortcut for packaging a music list. The `-m` and `-a` options may appear in either order.
+- **`music -m <files>... [-a <output.mavc>]`** — Shortcut for packaging a music list with equal initial weights (`1 / track count`). The `-m` and `-a` options may appear in either order.
 - **`create <manifest.json> <output.mavc>`** — Alias for manifest-based packaging.
+- **`--add` / `-+ <files>... --to <archives>...`** — Add audio files to each archive; each resulting archive may contain at most 5 tracks and 150 MB of audio payload. New tracks start with weight 1.
+- **`--remove` / `-x <track-ids>... --from <archives>...`** — Remove at least two specified track IDs from each archive.
+
+Archive limits are read from `mavc.toml` in the current working directory. If the file is absent, MAVC uses 5 tracks and 150 MB by default. Configure them with:
+
+```toml
+[limits]
+max_tracks = 5
+max_size_mb = 150
+```
+
+`max_size_mb` uses decimal megabytes (1 MB = 1,000,000 bytes) and applies to audio payload size.
 - **`list <archive.mavc>`** — List tracks and show their IDs, formats, and weights.
 - **`play [-r|--random] <archive.mavc>`** — Choose a track by its weight and play it with MAVC's built-in player. Random playback is the default.
 - **`play -o|--one <track-id> <archive.mavc>`** — Play one specified track ID.
-- **`play -sp|--system-player <archive.mavc>`** — Extract the selected track temporarily and open it with the system's associated audio app.
-- **`play -bp|--browser-player <archive.mavc>`** — Save a temporary audio file and HTML player page in a `mavc-browser-*` folder under the current working directory, then open the page in the default browser. Browser autoplay settings may require clicking Play.
+- **`play --all <archive.mavc>`** — Play every track in archive order with MAVC's built-in player.
+- **`play -c|--combine <track-ids>... <archive.mavc>`** — Mix at least two specified tracks at the same time. Add `-bp` to mix them in the browser; `-sp` shows a warning and falls back to the built-in player.
+- **`play -sp|--system-player <archive.mavc>`** — Export all tracks to a temporary playlist and open it with the system's associated player. With `--combine`, MAVC warns and uses its built-in player.
+- **`play -bp|--browser-player <archive.mavc>`** — Save the archive's tracks and an HTML selection page in a temporary folder, then open the page in the default browser. Browser autoplay settings may require clicking Play.
 - **`inspect <archive.mavc> [track-id]`** or **`inspect <track-id> <archive.mavc>`** — Show archive information and available track metadata, such as title, artist/singer, album, genre, year, duration, bitrate, sample rate, channels, and bit depth. Missing tags are omitted.
 - **`pick <archive.mavc>`** — Print a weighted random track selection without playing it.
-- **`weight <archive.mavc> <track-id>=<weight>`** — Update a track's random-selection weight in the archive and report the old and new values. Weight must be finite and non-negative; use `0` to exclude a track from random selection.
+- **`weight <archive.mavc> <track-id>=<weight>`** — Set one track's random-selection weight from 0 to 1, then divide the remaining weight evenly among all other tracks. For example, in a four-track archive, setting one track to `0.4` sets each other track to `0.2`. Weight `0` excludes the selected track from random selection; weight `1` excludes all other tracks.
 - **`extract <archive.mavc> <track-id> [output-file]`** — Extract a track. If no output filename is given, MAVC uses the track's stored filename and extension.
 
 `-r`/`--random` and `-o`/`--one` are mutually exclusive. The browser player also
@@ -68,6 +84,65 @@ magic, container version (`u16`), description length (`u32`), MVLC index length
 objects, followed by the concatenated audio payloads. Track offsets in the
 index are relative to the beginning of the payload section. The container and
 MVLC index version are both currently `1`.
+
+### Code layout
+
+```mermaid
+flowchart TD
+    CLI["src/cli<br/>arguments, command dispatch, output, playback"] --> API["src/api<br/>high-level Rust builders"]
+    CLI --> CORE["src/core<br/>archive operations and format implementation"]
+    API --> CORE
+    CORE --> MODEL["model + metadata"]
+    CORE --> FORMAT["format + archive reader"]
+    CORE --> CONFIG["configuration + errors"]
+```
+
+`src/lib.rs` re-exports the public types and operations, so callers can use
+`mavc::Archive`, `mavc::create_archive`, or the higher-level
+`mavc::music()` builder without depending on internal module paths.
+
+### Archive layout
+
+```mermaid
+flowchart LR
+    H["Header · 22 bytes<br/>MAVC · version · description length<br/>index length · payload length"]
+    D["Description JSON<br/>byte length from header"]
+    I["MVLC index JSON<br/>byte length from header"]
+    P["Audio payload<br/>original track bytes concatenated"]
+    H --> D --> I --> P
+```
+
+Each index track stores an `offset` and `length`. The offset is relative to the
+start of the audio payload, so its absolute file position is:
+
+```text
+payload_start = 22 + description_length + index_length
+track_position = payload_start + track.offset
+```
+
+The index also stores each track's ID, display title, original filename, codec,
+weight, and cached audio metadata. The description and index are UTF-8 JSON;
+the audio section contains the original encoded audio bytes without
+transcoding. This byte layout is language-neutral, so other implementations
+can read and write MAVC files by following the same field sizes, byte order,
+JSON fields, and offset rules.
+
+### Creation flow
+
+```mermaid
+flowchart TD
+    C["CLI music command or Rust music() caller"] --> B["music().from(files).output(path)"]
+    B --> M["CreateManifest<br/>description + track sources"]
+    M --> V["Validate inputs<br/>assign IDs, weights, offsets"]
+    V --> J["Serialize description and MVLC index as JSON"]
+    J --> W["Write 22-byte header and JSON sections"]
+    W --> A["Append original audio bytes in track order"]
+    A --> F[".mavc archive"]
+```
+
+The public `music()` builder prepares a manifest and delegates to the same
+core archive writer used by the CLI. The writer records payload-relative
+offsets before streaming each source file into the payload section.
 
 ## Windows
 
