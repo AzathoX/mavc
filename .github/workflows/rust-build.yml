@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build Rust Binary (${{ matrix.os }})
+    name: Build MAVC (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -28,21 +28,52 @@ jobs:
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
 
-    # ALSA headers are needed by the audio output dependency on Linux.
-    - name: Install Linux audio dependencies
+    # Install the native libraries required by the Tauri and audio dependencies on Linux.
+    - name: Install Linux build dependencies
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install --yes pkg-config libasound2-dev
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes \
+          build-essential \
+          curl \
+          file \
+          libasound2-dev \
+          libayatana-appindicator3-dev \
+          libgtk-3-dev \
+          libssl-dev \
+          libwebkit2gtk-4.1-dev \
+          libxdo-dev \
+          librsvg2-dev \
+          lld \
+          pkg-config \
+          patchelf \
+          wget
 
-    # 4. 执行编译命令（Release 优化版本）
-    - name: Run Cargo Build
+    # Build the CLI crate from its own project directory.
+    - name: Build MAVC CLI
       run: cargo build --release
+      working-directory: mavc
 
-    # 5. 上传编译好的二进制文件到 GitHub，作为下载产物 (Artifact)
+    # Install the CLIs used by mavc-app's Tauri beforeBuildCommand and build command.
+    - name: Install Dioxus CLI
+      run: cargo install dioxus-cli --locked
+
+    - name: Install Tauri CLI
+      run: cargo install tauri-cli --version "^2.0.0" --locked
+
+    # Build the desktop app from its own project directory, including the Dioxus frontend.
+    - name: Build MAVC Desktop App
+      run: cargo tauri build --no-bundle
+      working-directory: mavc-app
+
+    # Upload the CLI and desktop app binaries as a per-platform artifact.
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: rust-release-binary-${{ matrix.os }}
+        name: mavc-binaries-${{ matrix.os }}
         path: |
-          target/release/mavc
-          target/release/mavc.exe
+          mavc/target/release/mavc
+          mavc/target/release/mavc.exe
+          mavc-app/target/release/mavc-app
+          mavc-app/target/release/mavc-app.exe
         retention-days: 7
