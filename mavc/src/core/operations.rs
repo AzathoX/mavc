@@ -39,6 +39,7 @@ pub fn create_archive(manifest: &CreateManifest, output: impl AsRef<Path>) -> Re
             offset: payload_len,
             length,
             weight: source.weight,
+            cover_art_url: None,
             metadata: read_audio_metadata(&source.path),
         });
         payload_len = payload_len
@@ -175,6 +176,7 @@ fn rewrite_archive(path: &Path, additions: &[PathBuf], removals: &[usize]) -> Re
             offset: payload_len,
             length,
             weight: 1.0,
+            cover_art_url: None,
             metadata: read_audio_metadata(source),
         });
         payload_len = payload_len
@@ -251,6 +253,72 @@ pub fn safe_relative_path(path: &str) -> Result<PathBuf, Error> {
 }
 
 impl Archive {
+    /// Update editable track tags and weight, preserving the archive payload.
+    pub fn update_track_details(
+        archive_path: impl AsRef<Path>,
+        track_id: usize,
+        title: String,
+        artist: Option<String>,
+        album: Option<String>,
+        genre: Option<String>,
+        year: Option<String>,
+        cover_art_url: Option<String>,
+        weight: f64,
+    ) -> Result<(), Error> {
+        if !weight.is_finite() || !(0.0..=1.0).contains(&weight) {
+            return Err(Error::Invalid(
+                "weight must be a finite number between 0 and 1".into(),
+            ));
+        }
+        let archive_path = archive_path.as_ref();
+        let archive = Self::open(archive_path)?;
+        let mut index = archive.index.clone();
+        let track = index
+            .tracks
+            .iter_mut()
+            .find(|track| track.id == track_id)
+            .ok_or_else(|| Error::Invalid(format!("no track with id {track_id}")))?;
+        track.title = title.clone();
+        track.metadata.title = Some(title);
+        track.metadata.artist = artist;
+        track.metadata.album = album;
+        track.metadata.genre = genre;
+        track.metadata.year = year;
+        track.cover_art_url = cover_art_url;
+        track.weight = weight;
+        let description = serde_json::to_vec(&archive.describe)?;
+        let index = serde_json::to_vec(&index)?;
+        let description_len = u32::try_from(description.len())
+            .map_err(|_| Error::Invalid("description is too large".into()))?;
+        let index_len =
+            u32::try_from(index.len()).map_err(|_| Error::Invalid("index is too large".into()))?;
+        let mut source = File::open(archive_path)?;
+        let payload_len = source.metadata()?.len() - archive.payload_start;
+        let temp = sibling_temp_path(archive_path);
+        let result = (|| -> Result<(), Error> {
+            let mut output = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&temp)?;
+            output.write_all(MAGIC)?;
+            output.write_all(&VERSION.to_le_bytes())?;
+            output.write_all(&description_len.to_le_bytes())?;
+            output.write_all(&index_len.to_le_bytes())?;
+            output.write_all(&payload_len.to_le_bytes())?;
+            output.write_all(&description)?;
+            output.write_all(&index)?;
+            source.seek(SeekFrom::Start(archive.payload_start))?;
+            io::copy(&mut source, &mut output)?;
+            output.sync_all()?;
+            Ok(())
+        })();
+        if let Err(error) = result {
+            let _ = std::fs::remove_file(&temp);
+            return Err(error);
+        }
+        replace_file(&temp, archive_path)
+    }
+
     /// Update a track's selection weight and rewrite the archive index while
     /// preserving the packed audio payload.
     pub fn update_track_weight(

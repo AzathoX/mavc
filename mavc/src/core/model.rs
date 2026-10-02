@@ -43,6 +43,8 @@ pub struct Track {
     pub length: u64,
     pub weight: f64,
     #[serde(default)]
+    pub cover_art_url: Option<String>,
+    #[serde(default)]
     pub metadata: AudioMetadata,
 }
 

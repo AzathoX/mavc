@@ -2,8 +2,11 @@
 <module type="EMPTY_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/mavc-lib/src" isTestSource="false" />
-      <excludeFolder url="file://$MODULE_DIR$/mavc-lib/target" />
+      <sourceFolder url="file://$MODULE_DIR$/mavc-app/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/mavc-app/src-tauri/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/mavc/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/mavc-app/target" />
+      <excludeFolder url="file://$MODULE_DIR$/mavc/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

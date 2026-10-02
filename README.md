@@ -51,7 +51,7 @@ Usage:
 - **`--add` / `-+ <files>... --to <archives>...`** — Add audio files to each archive; each resulting archive may contain at most 5 tracks and 150 MB of audio payload. New tracks start with weight 1.
 - **`--remove` / `-x <track-ids>... --from <archives>...`** — Remove at least two specified track IDs from each archive.
 
-Archive limits are read from `mavc-lib/mavc.toml` in the current working directory. If the file is absent, MAVC uses 5 tracks and 150 MB by default. Configure them with:
+Archive limits are read from `mavc` in the current working directory. If the file is absent, MAVC uses 5 tracks and 150 MB by default. Configure them with:
 
 ```toml
 [limits]
@@ -97,7 +97,7 @@ flowchart TD
     CORE --> CONFIG["configuration + errors"]
 ```
 
-`mavc-lib/src` re-exports the public types and operations, so callers can use
+`mavc` re-exports the public types and operations, so callers can use
 `mavc::Archive`, `mavc::create_archive`, or the higher-level
 `mavc::music()` builder without depending on internal module paths.
 
@@ -157,6 +157,85 @@ cargo build --release
 
 The built-in player uses the default Windows audio device. The `-sp` and `-bp`
 options open the audio file or browser page through Windows file associations.
+
+## Desktop app frontend (`mavc-app`)
+
+`mavc-app` is MAVC's desktop application. Its user interface is written in Rust
+with Dioxus and runs in a Tauri 2 webview. The frontend calls Tauri commands
+through a small typed bridge; the desktop command layer delegates archive work
+to the local `mavc` Rust library.
+
+### Features
+
+- **Open and manage archives:** Load a `.mavc` archive, reload it, return to the
+  start screen, and add audio files to the currently open archive.
+- **Browse and inspect tracks:** Select a track in the library to view its cover
+  art, title, artist, album, genre, year, weight, and available scraping
+  information.
+- **Edit track details:** Update the track title, artist, album, genre, year,
+  cover image URL, and playback weight. Tracks can also be removed from the
+  archive.
+- **Weighted playback:** Play a weighted random selection, play tracks in
+  archive order, or start a chosen track. Track weights influence random
+  selection.
+- **Combine selected tracks:** Check tracks in the library and play the
+  selection together, with separate seek controls for each source track.
+- **Playback controls:** Pause and resume playback, drag the progress bar to
+  seek, and move an individual combined track forward or backward by 0.5
+  seconds.
+- **Export archives:** Create an archive from audio files or export the current
+  archive to a chosen path.
+- **Choose a look and language:** Switch between the Apple and Classic Midnight
+  themes, and use Traditional Chinese, Simplified Chinese, English, or Japanese.
+
+All archive and track changes are handled locally by the MAVC library.
+
+### Frontend layout
+
+```text
+mavc-app/
+├── src/
+│   ├── app.rs                 # App module wiring
+│   ├── app/
+│   │   ├── frontend.rs        # Dioxus views and UI event bindings
+│   │   ├── logic.rs           # Reactive app state and derived view data
+│   │   ├── bridge.rs          # Typed calls from the webview to Tauri
+│   │   ├── models.rs          # Frontend data transfer types
+│   │   ├── i18n.rs            # Traditional Chinese, Simplified Chinese, English, and Japanese
+│   │   ├── formatting.rs      # Track labels and display formatting
+│   │   └── playback.rs        # Webview audio controls
+│   └── main.rs               # Dioxus application entry point
+├── assets/styles.css         # Themes and interface styles
+└── src-tauri/
+    └── src/commands.rs       # Desktop commands backed by the mavc library
+```
+
+`frontend.rs` renders the player, archive list, track details, and archive tools.
+`logic.rs` owns shared reactive state and derives the values displayed by those
+views. `bridge.rs` converts typed frontend requests into Tauri command calls,
+while `src-tauri/src/commands.rs` handles desktop access and calls the MAVC
+library. The UI includes Apple and Classic Midnight themes and Traditional
+Chinese, Simplified Chinese, English, and Japanese.
+
+### Develop and package the desktop app
+
+Install Rust, the Dioxus CLI (`dx`), the Tauri CLI (`cargo tauri`), and the
+native build prerequisites for your operating system. From the `mavc-app`
+directory, run:
+
+```sh
+cargo tauri dev
+```
+
+To create a release bundle for the current operating system, run:
+
+```sh
+cargo tauri build
+```
+
+The Tauri configuration starts the Dioxus development server with
+`dx serve --port 1420 --interactive false` and builds the frontend with
+`dx bundle --release`.
 
 ## License
 
