@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "專輯館",
+  "version": "0.1.0",
+  "identifier": "org.mavc.app",
+  "build": {
+    "beforeDevCommand": "dx serve --port 1420 --interactive false",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "dx bundle --release",
+    "frontendDist": "../dist/public"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "專輯館 · MAVC",
+        "width": 1280,
+        "height": 900,
+        "minWidth": 940,
+        "minHeight": 720
+      }
+    ],
+    "security": {
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": []
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

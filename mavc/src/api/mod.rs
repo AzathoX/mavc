@@ -49,6 +49,7 @@ pub fn play() -> PlayBuilder {
 pub struct PlayBuilder {
     archive: Option<PathBuf>,
     track_id: Option<usize>,
+    track_ids: Vec<usize>,
 }
 
 /// A selected track and its length-limited audio byte stream.
@@ -70,13 +71,52 @@ impl PlayBuilder {
     /// Use weighted random selection (the default).
     pub fn random(mut self) -> Self {
         self.track_id = None;
+        self.track_ids.clear();
         self
     }
 
     /// Select a track by its ID instead of choosing randomly.
     pub fn one(mut self, track_id: usize) -> Self {
         self.track_id = Some(track_id);
+        self.track_ids.clear();
         self
+    }
+
+    /// Select multiple track IDs for simultaneous playback, as used by `play -c`.
+    pub fn combine<I>(mut self, track_ids: I) -> Self
+    where
+        I: IntoIterator<Item = usize>,
+    {
+        self.track_id = None;
+        self.track_ids = track_ids.into_iter().collect();
+        self
+    }
+
+    /// Open all selected tracks as independent byte streams for simultaneous playback.
+    pub fn streams(self) -> Result<Vec<PlaybackTrack>, Error> {
+        let path = self
+            .archive
+            .ok_or_else(|| Error::Invalid("an archive path is required".into()))?;
+        if self.track_ids.len() < 2 {
+            return Err(Error::Invalid(
+                "combined playback requires at least two track IDs".into(),
+            ));
+        }
+        let archive = Archive::open(&path)?;
+        self.track_ids
+            .into_iter()
+            .map(|track_id| {
+                let track = archive
+                    .index
+                    .tracks
+                    .iter()
+                    .find(|track| track.id == track_id)
+                    .cloned()
+                    .ok_or_else(|| Error::Invalid(format!("no track with id {track_id}")))?;
+                let bytes = archive.open_track(&path, track_id)?;
+                Ok(PlaybackTrack { track, bytes })
+            })
+            .collect()
     }
 
     /// Open the selected track and return its metadata with a byte stream.

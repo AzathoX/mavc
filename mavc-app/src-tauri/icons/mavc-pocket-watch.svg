@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#60471f"/><stop offset=".28" stop-color="#d0ad4e"/>
+      <stop offset=".48" stop-color="#73551f"/><stop offset=".67" stop-color="#e0c46b"/><stop offset="1" stop-color="#60471f"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#694e21"/><stop offset=".35" stop-color="#d0ad4e"/>
+      <stop offset=".7" stop-color="#61471d"/><stop offset="1" stop-color="#c59d42"/>
+    </linearGradient>
+    <radialGradient id="face" cx="45%" cy="36%" r="70%">
+      <stop stop-color="#20212a"/><stop offset=".58" stop-color="#151720"/><stop offset="1" stop-color="#0d0f16"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="20" stdDeviation="16" flood-color="#000" flood-opacity=".48"/>
+    </filter>
+    <filter id="glint" x="-50%" y="-200%" width="200%" height="500%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+  </defs>
+
+  <!-- Chain and bow mirror the watch-stage elements in the player. -->
+  <path d="M512 5v98" stroke="#d0ad4e" stroke-width="7"/>
+  <path d="M512 67c-31 0-45 21-45 48v27c0 29 17 48 45 48s45-19 45-48v-27c0-27-14-48-45-48Z" fill="#17171a" stroke="#a98137" stroke-width="15"/>
+  <path d="M512 83c-19 0-29 13-29 32v27c0 20 11 33 29 33s29-13 29-33v-27c0-19-10-32-29-32Z" fill="none" stroke="#60471f" stroke-width="7"/>
+
+  <!-- The gold case, inset bezel, and midnight face follow the page's CSS rings. -->
+  <g filter="url(#shadow)">
+    <circle cx="512" cy="585" r="420" fill="url(#case)"/>
+    <circle cx="512" cy="585" r="390" fill="url(#rim)"/>
+    <circle cx="512" cy="585" r="350" fill="url(#face)" stroke="#4d493f" stroke-width="3"/>
+    <circle cx="512" cy="585" r="339" fill="none" stroke="#171921" stroke-width="11"/>
+    <circle cx="512" cy="585" r="334" fill="none" stroke="#464239" stroke-width="3"/>
+  </g>
+
+  <!-- Sixty minute marks and twelve larger five-minute marks match the dial loop. -->
+  <g transform="translate(512 585) scale(.95) translate(-512 -585)" stroke-linecap="round">
+    <path d="M512 222v19" stroke="#d0ad4e" stroke-width="6" transform="rotate(0 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(6 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(12 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(18 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(24 512 585)"/>
+    <path d="M512 222v19" stroke="#d0ad4e" stroke-width="6" transform="rotate(30 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(36 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(42 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(48 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(54 512 585)"/>
+    <path d="M512 222v19" stroke="#d0ad4e" stroke-width="6" transform="rotate(60 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(66 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(72 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(78 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(84 512 585)"/>
+    <path d="M512 222v19" stroke="#d0ad4e" stroke-width="6" transform="rotate(90 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(96 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(102 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(108 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(114 512 585)"/>
+    <path d="M512 222v19" stroke="#d0ad4e" stroke-width="6" transform="rotate(120 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(126 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(132 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(138 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(144 512 585)"/>
+    <path d="M512 222v19" stroke="#d0ad4e" stroke-width="6" transform="rotate(150 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(156 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(162 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(168 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(174 512 585)"/>
+    <path d="M512 222v19" stroke="#d0ad4e" stroke-width="6" transform="rotate(180 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(186 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(192 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(198 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(204 512 585)"/>
+    <path d="M512 222v19" stroke="#d0ad4e" stroke-width="6" transform="rotate(210 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(216 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(222 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(228 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(234 512 585)"/>
+    <path d="M512 222v19" stroke="#d0ad4e" stroke-width="6" transform="rotate(240 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(246 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(252 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(258 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(264 512 585)"/>
+    <path d="M512 222v19" stroke="#9a5960" stroke-width="6" transform="rotate(270 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(276 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(282 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(288 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(294 512 585)"/>
+    <path d="M512 222v19" stroke="#d0ad4e" stroke-width="6" transform="rotate(300 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(306 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(312 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(318 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(324 512 585)"/>
+    <path d="M512 222v19" stroke="#d0ad4e" stroke-width="6" transform="rotate(330 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(336 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(342 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(348 512 585)"/>
+    <path d="M512 223v8" stroke="#797b7d" stroke-width="4" transform="rotate(354 512 585)"/>
+  </g>
+
+  <!-- The four numerals and center label reproduce the labels on the live watch. -->
+  <g transform="translate(512 585) scale(.95) translate(-512 -585)" fill="#e0c46b" font-family="Georgia,serif" font-weight="600" font-size="41" text-anchor="middle">
+    <text x="512" y="293">12</text>
+    <text x="790" y="600" dominant-baseline="middle">3</text>
+    <text x="512" y="910">6</text>
+    <text x="234" y="600" dominant-baseline="middle" fill="#9a5960">9</text>
+  </g>
+  <g transform="translate(512 585) scale(.95) translate(-512 -585)" text-anchor="middle" font-family="Georgia,serif" opacity=".7">
+    <text x="512" y="558" fill="#858591" font-size="20" letter-spacing="7">MUSIC</text>
+    <text x="512" y="587" fill="#c59d42" font-size="27" font-weight="600" letter-spacing="5">ROOM</text>
+  </g>
+
+  <!-- The note hand uses the same staff-paper proportions and treble-clef character. -->
+  <g transform="translate(512 585) scale(.95) translate(-512 -585)">
+    <g transform="translate(419 203) scale(2.58 2.82)">
+      <rect x="17" y="18" width="38" height="100" rx="5" fill="#1b1d25" stroke="#71684f" stroke-width="1"/>
+      <g stroke="#c0b18d" stroke-width=".8">
+        <path d="M20 48h32M20 55h32M20 62h32M20 69h32M20 76h32"/>
+      </g>
+    </g>
+  </g>
+  <g transform="translate(419 203) scale(2.58 2.82)">
+    <text x="36" y="264" fill="#d9b653" font-family="Noto Music, Apple Symbols, Bravura, serif" font-size="510" text-anchor="middle">𝄞</text>
+  </g>
+
+  <!-- The center pin, fluted crown, and soft glass glint match the page controls. -->
+  <circle cx="512" cy="585" r="19" fill="#17191e" stroke="#c59d42" stroke-width="9"/>
+  <circle cx="512" cy="585" r="5" fill="#d0ad4e"/>
+  <rect x="917" y="494" width="36" height="89" rx="16" fill="#bd963b" stroke="#8e6a2b" stroke-width="6"/>
+  <path d="M928 503v71m13-71v71" stroke="#60471f" stroke-width="6"/>
+  <ellipse cx="283" cy="273" rx="84" ry="16" fill="#fff4d6" opacity=".2" filter="url(#glint)" transform="rotate(-48 283 273)"/>
+</svg>

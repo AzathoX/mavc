@@ -14,7 +14,7 @@ pub(super) const VERSION: u16 = 1;
 pub(super) const HEADER_LEN: u64 = 22;
 
 pub(super) fn sibling_temp_path(path: &Path) -> PathBuf {
-    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    let parent = path.parent().unwrap_or_else(|| Path::new("../../.."));
     let name = path.file_name().unwrap_or_default().to_string_lossy();
     parent.join(format!(
         ".{name}.mavc-{}-{}.tmp",
