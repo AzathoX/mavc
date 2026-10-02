@@ -61,8 +61,15 @@ jobs:
     - name: Install Tauri CLI
       run: cargo install tauri-cli --version "^2.0.0" --locked
 
-    # Build the desktop app from its own project directory, including the Dioxus frontend.
+    # macOS builds a distributable DMG that contains the MAVC app bundle.
+    - name: Package MAVC for macOS
+      if: runner.os == 'macOS'
+      run: cargo tauri build --bundles dmg
+      working-directory: mavc-app
+
+    # Linux and Windows currently export their native app binaries without installers.
     - name: Build MAVC Desktop App
+      if: runner.os != 'macOS'
       run: cargo tauri build --no-bundle
       working-directory: mavc-app
 
@@ -70,10 +77,19 @@ jobs:
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: mavc-binaries-${{ matrix.os }}
+        name: mavc-${{ matrix.os }}
         path: |
           mavc/target/release/mavc
           mavc/target/release/mavc.exe
           mavc-app/target/release/mavc-app
           mavc-app/target/release/mavc-app.exe
+        retention-days: 7
+
+    - name: Upload MAVC macOS DMG
+      if: runner.os == 'macOS'
+      uses: actions/upload-artifact@v4
+      with:
+        name: mavc-macos-dmg
+        path: mavc-app/target/release/bundle/dmg/*.dmg
+        if-no-files-found: error
         retention-days: 7
