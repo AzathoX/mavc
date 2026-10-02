@@ -51,7 +51,7 @@ Usage:
 - **`--add` / `-+ <files>... --to <archives>...`** — Add audio files to each archive; each resulting archive may contain at most 5 tracks and 150 MB of audio payload. New tracks start with weight 1.
 - **`--remove` / `-x <track-ids>... --from <archives>...`** — Remove at least two specified track IDs from each archive.
 
-Archive limits are read from `mavc.toml` in the current working directory. If the file is absent, MAVC uses 5 tracks and 150 MB by default. Configure them with:
+Archive limits are read from `mavc-lib/mavc.toml` in the current working directory. If the file is absent, MAVC uses 5 tracks and 150 MB by default. Configure them with:
 
 ```toml
 [limits]
@@ -97,7 +97,7 @@ flowchart TD
     CORE --> CONFIG["configuration + errors"]
 ```
 
-`src/lib.rs` re-exports the public types and operations, so callers can use
+`mavc-lib/src` re-exports the public types and operations, so callers can use
 `mavc::Archive`, `mavc::create_archive`, or the higher-level
 `mavc::music()` builder without depending on internal module paths.
 

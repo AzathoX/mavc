@@ -38,7 +38,7 @@ fn default_max_size_mb() -> u64 {
 }
 
 pub(super) fn load_limits() -> Result<Limits, Error> {
-    let config_path = Path::new("mavc.toml");
+    let config_path = Path::new("../../../mavc.toml");
     let config = match std::fs::read_to_string(config_path) {
         Ok(contents) => toml::from_str::<Config>(&contents)
             .map_err(|error| Error::Invalid(format!("{}: {error}", config_path.display())))?,

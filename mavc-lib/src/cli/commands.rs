@@ -136,7 +136,7 @@ fn create_from_manifest(
     let mut bytes = Vec::new();
     File::open(&manifest_path)?.read_to_end(&mut bytes)?;
     let mut manifest: CreateManifest = serde_json::from_slice(&bytes)?;
-    let base = manifest_path.parent().unwrap_or(Path::new("."));
+    let base = manifest_path.parent().unwrap_or(Path::new("../../.."));
     for track in &mut manifest.tracks {
         if track.path.is_relative() {
             track.path = base.join(&track.path);
