@@ -1,10 +1,15 @@
 name: Rust Build and Export
 
-# 触发条件：当推送到 main 分支，或者手动触发
+# Build on branch pushes, manual runs, or a Release published through GitHub.
 on:
   push:
     branches: [ "build" ]
   workflow_dispatch: # 允许你在 GitHub 页面上手动点击按钮触发编译
+  release:
+    types: [published]
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -117,6 +122,42 @@ jobs:
           mavc-app/target/release/mavc-app
           mavc-app/target/release/mavc-app.exe
         retention-days: 7
+
+    - name: Prepare macOS Release assets
+      if: github.event_name == 'release' && runner.os == 'macOS'
+      shell: bash
+      run: |
+        mkdir -p release-assets
+        cp mavc-app/target/release/bundle/macos/malbum-macos.zip "release-assets/malbum-macos-${RUNNER_ARCH}.zip"
+        tar -czf "release-assets/mavc-cli-macos-${RUNNER_ARCH}.tar.gz" -C mavc/target/release mavc
+
+    - name: Prepare Ubuntu Release assets
+      if: github.event_name == 'release' && runner.os == 'Linux'
+      shell: bash
+      run: |
+        mkdir -p release-assets linux-package
+        cp mavc/target/release/mavc linux-package/mavc
+        cp mavc-app/target/release/mavc-app linux-package/malbum
+        tar -czf "release-assets/malbum-ubuntu-${RUNNER_ARCH}.tar.gz" -C linux-package malbum mavc
+
+    - name: Prepare Windows Release assets
+      if: github.event_name == 'release' && runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force release-assets, windows-package | Out-Null
+        Copy-Item mavc/target/release/mavc.exe windows-package/mavc.exe
+        Copy-Item mavc-app/target/release/mavc-app.exe windows-package/malbum.exe
+        Compress-Archive -Path windows-package/* -DestinationPath "release-assets/malbum-windows-$env:RUNNER_ARCH.zip" -Force
+
+    # Attach directly to the existing published Release; no local download needed.
+    - name: Upload assets to GitHub Release
+      if: github.event_name == 'release'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        RELEASE_TAG: ${{ github.event.release.tag_name }}
+      run: gh release upload "$RELEASE_TAG" release-assets/* --clobber
 
     # Preserve the complete macOS bundle directory before post-job cache cleanup.
     # Keep the ditto ZIP inside it to preserve app permissions and macOS metadata.
