@@ -31,6 +31,7 @@
   },
   "bundle": {
     "active": true,
+    "publisher": "AzathoX (Zheng Zeref SW)",
     "targets": "all",
     "icon": [
       "icons/32x32.png",

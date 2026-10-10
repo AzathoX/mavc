@@ -217,6 +217,15 @@ pub fn App() -> Element {
                     }, {tr(lang, "退出，回到主界面")} }
                 }
                 p { class: "sidebar-footnote", "{version_label}" }
+                p { class: "author-credit",
+                    a {
+                        href: "https://github.com/AzathoX/mavc/blob/main/LICENSE",
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        title: "LICENSE · AzathoX (Zheng Zeref SW)",
+                        "AzathoX (Zheng Zeref SW)"
+                    }
+                }
             }
 
             // Main workspace: transport controls, archive actions, and track metadata.
