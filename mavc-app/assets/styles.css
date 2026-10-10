@@ -341,6 +341,9 @@ body { background: #090b10; }
 .progress-knob { border-color: #e0c46b; background: #8f414b; box-shadow: 0 0 0 1px #8f414b, 0 0 8px #8f414b77; }
 
 .sidebar-footnote { color: #686a73; font-size: 8px; letter-spacing: .12em; text-align: center; }
+.author-credit { margin: 6px 0 0; text-align: center; font-size: 10px; line-height: 1.5; }
+.author-credit a { color: #c4a15a; text-decoration: none; }
+.author-credit a:hover, .author-credit a:focus-visible { text-decoration: underline; }
 .archive-load-card h3 { margin-top: 13px; }
 .load-track-button { width: 100%; padding: 10px; border: 1px dashed #61543a; border-radius: 7px; color: #d4bd89; background: #17171a; text-align: left; font-size: 10px; }
 .load-track-button:disabled { opacity: .45; cursor: not-allowed; }

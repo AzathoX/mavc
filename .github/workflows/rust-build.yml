@@ -86,6 +86,7 @@ jobs:
         cargo tauri build --config '{"build":{"beforeBuildCommand":""}}' --bundles app --ci -- --offline
         test -f target/release/bundle/macos/malbum.app/Contents/Info.plist
         test -x target/release/bundle/macos/malbum.app/Contents/MacOS/mavc-app
+        codesign --verify --deep --strict --verbose=2 target/release/bundle/macos/malbum.app
       working-directory: mavc-app
 
     - name: Archive malbum macOS App
@@ -93,6 +94,10 @@ jobs:
       run: |
         ditto -c -k --sequesterRsrc --keepParent target/release/bundle/macos/malbum.app target/release/bundle/macos/malbum-macos.zip
         unzip -t target/release/bundle/macos/malbum-macos.zip
+        verification_dir="$(mktemp -d)"
+        ditto -x -k target/release/bundle/macos/malbum-macos.zip "$verification_dir"
+        codesign --verify --deep --strict --verbose=2 "$verification_dir/malbum.app"
+        rm -rf "$verification_dir"
       working-directory: mavc-app
 
     # Linux and Windows currently export their native app binaries without installers.
