@@ -1,9 +1,9 @@
 use super::archive::Archive;
-use super::config::load_limits;
 use super::error::Error;
 use super::format::{MAGIC, VERSION, replace_file, sibling_temp_path};
 use super::metadata::{codec_for, read_audio_metadata};
 use super::model::{CreateManifest, MusicIndex, Track};
+use super::validation::validate_audio;
 use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Component, Path, PathBuf};
@@ -23,6 +23,7 @@ pub fn create_archive(manifest: &CreateManifest, output: impl AsRef<Path>) -> Re
                 source.title
             )));
         }
+        validate_audio(&source.path)?;
         let codec = codec_for(&source.path)?;
         let length = std::fs::metadata(&source.path)?.len();
         let file_name = source
@@ -93,6 +94,9 @@ pub fn add_tracks(archive_paths: &[PathBuf], audio_paths: &[PathBuf]) -> Result<
             "add requires at least one audio file".into(),
         ));
     }
+    for source in audio_paths {
+        validate_audio(source)?;
+    }
     for path in archive_paths {
         rewrite_archive(path, audio_paths, &[])?;
     }
@@ -115,11 +119,6 @@ pub fn remove_tracks(archive_paths: &[PathBuf], track_ids: &[usize]) -> Result<(
 }
 
 fn rewrite_archive(path: &Path, additions: &[PathBuf], removals: &[usize]) -> Result<(), Error> {
-    let limits = load_limits()?;
-    let max_payload_bytes = limits
-        .max_size_mb
-        .checked_mul(1_000_000)
-        .ok_or_else(|| Error::Invalid("limits.max_size_mb is too large".into()))?;
     let archive = Archive::open(path)?;
     let mut tracks = archive.index.tracks.clone();
     for id in removals {
@@ -131,31 +130,14 @@ fn rewrite_archive(path: &Path, additions: &[PathBuf], removals: &[usize]) -> Re
         }
     }
     tracks.retain(|track| !removals.contains(&track.id));
-    let mut payload_len = tracks.iter().map(|track| track.length).sum::<u64>();
-    let final_track_count = tracks
-        .len()
-        .checked_add(additions.len())
-        .ok_or_else(|| Error::Invalid("too many tracks".into()))?;
-    if final_track_count > limits.max_tracks {
-        return Err(Error::Invalid(format!(
-            "{} would contain {final_track_count} tracks; the configured limit is {}",
-            path.display(),
-            limits.max_tracks
-        )));
-    }
+    let mut payload_len = tracks.iter().try_fold(0u64, |total, track| {
+        total
+            .checked_add(track.length)
+            .ok_or_else(|| Error::Invalid("archive payload is too large".into()))
+    })?;
     for source in additions {
         let codec = codec_for(source)?;
         let length = std::fs::metadata(source)?.len();
-        if payload_len
-            .checked_add(length)
-            .is_none_or(|size| size > max_payload_bytes)
-        {
-            return Err(Error::Invalid(format!(
-                "{} would exceed the configured {} MB audio payload limit",
-                path.display(),
-                limits.max_size_mb
-            )));
-        }
         let file_name = source
             .file_name()
             .and_then(|n| n.to_str())

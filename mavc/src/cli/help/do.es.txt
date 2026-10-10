@@ -1,0 +1,25 @@
+Añadir audio:
+  -+ es el comando corto para añadir canciones; equivale a --add y add.
+  mavc do -+ song.mp3 other.flac --to collection.mavc
+  mavc do add song.mp3 other.flac --to a.mavc b.mavc
+  Audio compatible: MP3, FLAC, AAC (ADTS), WAV (PCM / IEEE flotante), OGG (Vorbis). El audio se verifica antes de escribir.
+
+Eliminar pistas (ID, no rutas de audio):
+  mavc list collection.mavc
+  mavc do -x 0 2 --from collection.mavc
+
+Exportar antes de eliminar (opcional):
+  mavc do --remove 0 2 --from collection.mavc --to ./export
+  mavc do -x 0 --from collection.mavc --to ./export ./backup
+
+Reglas:
+  -+ / --add / add añade canciones; -x / --remove / remove elimina pistas por ID.
+  --from admite varios archivos. --to admite varios destinos y se puede repetir.
+  Sin --to, se eliminan las pistas directamente. Con --to, se exportan con sus nombres originales.
+  Los directorios se crean automáticamente. Todas las exportaciones deben completarse antes de eliminar.
+  Los archivos existentes, nombres duplicados o errores de exportación impiden eliminar y conservan las pistas.
+  No hay límite configurado de pistas ni de capacidad de audio.
+
+Opciones detalladas:
+  mavc do --add --help
+  mavc do --remove --help

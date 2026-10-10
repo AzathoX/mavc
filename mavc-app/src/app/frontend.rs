@@ -34,8 +34,26 @@ pub fn App() -> Element {
         playback_button_title,
         playback_button_icon,
     } = derive_view_model(&app_state);
+    let version_label = app_state
+        .app_info
+        .read()
+        .as_ref()
+        .map(|info| {
+            format!(
+                "malbum · {} · mavc {}",
+                info.app_version, info.library_version
+            )
+        })
+        .unwrap_or_else(|| format!("malbum · {}", env!("CARGO_PKG_VERSION")));
+    let supported_audio = app_state
+        .app_info
+        .read()
+        .as_ref()
+        .map(|info| info.supported_audio_extensions.join(", "))
+        .unwrap_or_default();
     let AppState {
         mut language,
+        app_info: _,
         mut apple_theme,
         mut archive_path,
         mut archive_info,
@@ -67,12 +85,11 @@ pub fn App() -> Element {
             aside { class: "sidebar",
                 div { class: "brand-lockup",
                     div { class: "brand-mark", "♫" }
-                    div { p { class: "brand-kicker", "MAVC · MUSIC ARCHIVE" } h1 { {tr(lang, "專輯館")} } }
+                    div { p { class: "brand-kicker", "malbum · MUSIC ARCHIVE" } h1 { {tr(lang, "專輯館")} } }
                 }
                 p { class: "nav-label", {tr(lang, "工作區")} }
                 nav { class: "main-nav",
                     a { class: "nav-item active", href: "#player", span { class: "nav-icon", "◉" } span { {tr(lang, "正在聆聽")} } }
-                    a { class: "nav-item", href: "#library", span { class: "nav-icon", "▤" } span { {tr(lang, "專輯收藏")} } }
                 }
                 if let Some(archive) = &info {
                     section { class: "sidebar-track-list", id: "library",
@@ -199,7 +216,7 @@ pub fn App() -> Element {
                         status_error.set(false);
                     }, {tr(lang, "退出，回到主界面")} }
                 }
-                p { class: "sidebar-footnote", "MAVC PLAYER　·　v0.1" }
+                p { class: "sidebar-footnote", "{version_label}" }
             }
 
             // Main workspace: transport controls, archive actions, and track metadata.
@@ -237,7 +254,7 @@ pub fn App() -> Element {
                     section { class: "player-column",
                         if info.is_some() {
                         div { class: "section-heading",
-                            div { p { class: "eyebrow", "MAVC PLAYER" } h2 { {tr(lang, "讓旋律慢一點")} } }
+                            div { p { class: "eyebrow", "malbum" } h2 { {tr(lang, "讓旋律慢一點")} } }
                             button { class: "more-button", onclick: move |_| { archive_info.set(None); audio_src.set(None); }, "↻" }
                         }
 
@@ -584,7 +601,7 @@ pub fn App() -> Element {
                         } else {
                             div { class: "empty-state",
                                 div { class: "empty-state-actions",
-                                    button { class: "make-archive-button", onclick: move |_| {
+                                    button { class: "make-archive-button", title: "{supported_audio}", onclick: move |_| {
                                         let mut status = status;
                                         let mut status_error = status_error;
                                         let mut archive_info = archive_info;
@@ -601,9 +618,7 @@ pub fn App() -> Element {
                                                 }
                                                 Ok(None) => {}
                                                 Err(error) => {
-                                                    status.set(if error == "Please select at least two audio files." {
-                                                        tr(lang, "選擇至少兩個音訊檔").to_owned()
-                                                    } else { error });
+                                                    status.set(error);
                                                     status_error.set(true);
                                                 }
                                             }
@@ -748,7 +763,7 @@ pub fn App() -> Element {
                     }
                 }
 
-                footer { class: "footer-note", span { "◌" } " " {tr(lang, "所有封存操作皆由本機 mavc 函式庫執行")} span { class: "footer-version", "MAVC PLAYER · 0.1" } }
+                footer { class: "footer-note", span { "◌" } " " {tr(lang, "所有封存操作皆由本機 mavc 函式庫執行")} span { class: "footer-version", "{version_label}" } }
             }
         }
     }

@@ -1,0 +1,42 @@
+Archive erstellen:
+  mavc package -m song.mp3 other.flac -a collection.mavc
+  mavc package manifest.json collection.mavc
+  mavc music -m song.mp3 [-a collection.mavc]
+  mavc create manifest.json collection.mavc
+  Ohne -a erzeugt eine Datei <filename>.mavc; mehrere Dateien erzeugen music.mavc.
+  Unterstützte Audiodateien: MP3, FLAC, AAC (ADTS), WAV (PCM / IEEE-Gleitkomma), OGG (Vorbis). Audio wird vor dem Schreiben geprüft.
+
+Archive ändern:
+  -+ ist der Kurzbefehl zum Hinzufügen von Titeln; er entspricht --add und add.
+  mavc do -+ song.mp3 --to collection.mavc
+  mavc do -x 0 2 --from collection.mavc [--to ./export]
+  Beim Entfernen ist --to ein optionales Exportverzeichnis. Erst nach vollständigem Export wird entfernt.
+  Ohne --to werden Titel direkt entfernt. Verwenden Sie IDs aus mavc list, keine Audiodateipfade.
+
+Titel anzeigen und auswählen:
+  mavc list collection.mavc
+  mavc inspect collection.mavc [track-id]
+  mavc inspect <track-id> collection.mavc
+  mavc pick collection.mavc
+
+Wiedergabe:
+  mavc play collection.mavc
+  mavc play -o 0 collection.mavc
+  mavc play --all collection.mavc
+  mavc play -c 0 1 collection.mavc
+  mavc play -sp collection.mavc
+  mavc play -bp collection.mavc
+  Standard: gewichtete Zufallsauswahl. -o: ein Titel; --all: der Reihe nach; -c: gleichzeitig mischen.
+  -sp: Systemplayer; -bp: Browserplayer.
+
+Gewichtungen und Extraktion:
+  mavc weight collection.mavc 0=0.25
+  mavc extract collection.mavc 0 [output.mp3]
+  mavc extract collection.mavc --all
+  Gewichtungen müssen zwischen 0 und 1 liegen. Eine Änderung verteilt die restliche Gewichtung neu.
+  extract --all schreibt ins aktuelle Verzeichnis und lehnt vorhandene oder doppelte Dateinamen ab.
+
+Hilfe und Version:
+  mavc --help / mavc help
+  mavc <command> --help / mavc help <command>
+  mavc --version / mavc -V / mavc -v

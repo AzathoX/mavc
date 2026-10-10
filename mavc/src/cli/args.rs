@@ -1,12 +1,15 @@
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 
+const DO_HELP: &str = include_str!("help/do.en.txt");
+const MAIN_HELP: &str = include_str!("help/main.en.txt");
+
 #[derive(Debug, Parser)]
 #[command(
     name = "mavc",
     disable_version_flag = true,
     about = "Weighted music archive tool",
-    after_help = "Previous CLI syntax:\n  mavc help|--help|-h\n  mavc version|--version|-V|-v\n  mavc package -m <audio-file>... [-a <output.mavc>]\n  mavc package <manifest.json> <output.mavc>\n  mavc music -m <audio-file>... [-a <output.mavc>]\n  mavc music -a <output.mavc> -m <audio-file>...\n  mavc create <manifest.json> <output.mavc>\n  mavc [-+|--add] <audio-file>... --to <archive.mavc>...\n  mavc [-x|--remove] <track-id>... --from <archive.mavc>...\n  mavc list <archive.mavc>\n  mavc play [-r|--random | -o|--one <track-id>] [-sp|--system-player | -bp|--browser-player] <archive.mavc>\n  mavc inspect <archive.mavc> [track-id]\n  mavc inspect <track-id> <archive.mavc>\n  mavc pick <archive.mavc>\n  mavc weight <archive.mavc> <track-id>=<weight>\n  mavc extract <archive.mavc> <track-id> [output-file]"
+    after_help = MAIN_HELP
 )]
 pub struct Cli {
     /// Print version information.
@@ -30,6 +33,8 @@ pub enum Commands {
     Music(MusicArgs),
     /// Create an archive from a JSON manifest.
     Create(ManifestArgs),
+    /// Modify archives by adding audio files or removing track IDs.
+    Do(DoArgs),
     /// Add audio files to one or more archives.
     #[command(short_flag = '+', long_flag = "add", hide = true)]
     Add(AddArgs),
@@ -51,6 +56,27 @@ pub enum Commands {
     /// Legacy shortcut: `mavc -m file.mp3`.
     #[command(short_flag = 'm', long_flag = "music-list", hide = true)]
     MusicShortcut(LegacyMusicArgs),
+}
+
+#[derive(Debug, Args)]
+#[command(after_help = DO_HELP)]
+pub struct DoArgs {
+    #[command(subcommand)]
+    pub action: DoAction,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DoAction {
+    /// Add audio files to destination archives.
+    #[command(
+        short_flag = '+',
+        long_flag = "add",
+        override_usage = "mavc do {add|--add|-+} <FILES>... --to <ARCHIVES>..."
+    )]
+    Add(AddArgs),
+    /// Remove track IDs from source archives.
+    #[command(short_flag = 'x', long_flag = "remove")]
+    Remove(RemoveArgs),
 }
 
 #[derive(Debug, Args)]
@@ -90,23 +116,28 @@ pub struct ManifestArgs {
 }
 
 #[derive(Debug, Args)]
+#[command(after_help = DO_HELP)]
 pub struct AddArgs {
     /// Audio files to add.
     #[arg(required = true, num_args = 1..)]
     pub files: Vec<PathBuf>,
     /// Destination archives.
-    #[arg(long = "to", required = true, num_args = 1..)]
+    #[arg(long = "to", required = true, num_args = 1.., action = clap::ArgAction::Append)]
     pub archives: Vec<PathBuf>,
 }
 
 #[derive(Debug, Args)]
+#[command(after_help = DO_HELP)]
 pub struct RemoveArgs {
-    /// Track IDs to remove.
-    #[arg(required = true, num_args = 1..)]
+    /// Track IDs to remove (use mavc list), not audio file paths.
+    #[arg(required = true, num_args = 1.., value_name = "TRACK_ID")]
     pub ids: Vec<usize>,
-    /// Archives to update.
-    #[arg(long = "from", required = true, num_args = 1..)]
+    /// Source archives; accepts multiple paths or repeated --from options.
+    #[arg(long = "from", required = true, num_args = 1.., action = clap::ArgAction::Append)]
     pub archives: Vec<PathBuf>,
+    /// Optional export directories; export all songs successfully before removal.
+    #[arg(long = "to", value_name = "DIRECTORY", num_args = 1.., action = clap::ArgAction::Append)]
+    pub outputs: Vec<PathBuf>,
 }
 
 #[derive(Debug, Args)]

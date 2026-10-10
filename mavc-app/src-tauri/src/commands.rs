@@ -92,8 +92,10 @@ fn load_archive(path: &str) -> Result<(Archive, ArchiveInfo), String> {
 
 // Archive inspection and creation commands.
 #[tauri::command]
-pub fn archive_list(path: String) -> Result<ArchiveInfo, String> {
-    load_archive(&path).map(|(_, info)| info)
+pub async fn archive_list(path: String) -> Result<ArchiveInfo, String> {
+    tauri::async_runtime::spawn_blocking(move || load_archive(&path).map(|(_, info)| info))
+        .await
+        .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]
@@ -130,17 +132,14 @@ pub async fn archive_create_music_from_picker(
     let Some(selected_files) = app
         .dialog()
         .file()
-        .add_filter(
-            "Audio files",
-            &["mp3", "flac", "wav", "m4a", "aac", "ogg", "opus"],
-        )
+        .add_filter("Audio files", mavc::SUPPORTED_AUDIO_EXTENSIONS)
         .blocking_pick_files()
     else {
         return Ok(None);
     };
 
-    if selected_files.len() < 2 {
-        return Err("Please select at least two audio files.".into());
+    if selected_files.is_empty() {
+        return Ok(None);
     }
 
     let files = selected_files
@@ -180,10 +179,7 @@ pub async fn archive_pick_audio(app: tauri::AppHandle) -> Result<Option<String>,
     let Some(file) = app
         .dialog()
         .file()
-        .add_filter(
-            "Audio files",
-            &["mp3", "flac", "wav", "m4a", "aac", "ogg", "opus"],
-        )
+        .add_filter("Audio files", mavc::SUPPORTED_AUDIO_EXTENSIONS)
         .blocking_pick_file()
     else {
         return Ok(None);
@@ -235,7 +231,6 @@ pub async fn archive_export_picker(
         .file()
         .set_file_name(format!("{stem}.mavc"))
         .add_filter("MAVC archive (*.mavc)", &["mavc"])
-        .add_filter("MVSC archive (*.mvsc)", &["mvsc"])
         .blocking_save_file()
     else {
         return Ok(None);
@@ -246,9 +241,10 @@ pub async fn archive_export_picker(
         .and_then(|extension| extension.to_str())
         .unwrap_or_default()
         .to_ascii_lowercase();
-    if !matches!(extension.as_str(), "mavc" | "mvsc") {
-        return Err("Please choose the .mavc or .mvsc file type.".into());
+    if extension != "mavc" {
+        return Err("Please choose the .mavc file type.".into());
     }
+    Archive::open(&source_path).map_err(|error| error.to_string())?;
     std::fs::copy(&source_path, &destination).map_err(|error| error.to_string())?;
     Ok(Some(destination.to_string_lossy().into_owned()))
 }
@@ -518,4 +514,97 @@ fn open_with_system_player(_path: &Path) -> std::io::Result<()> {
         std::io::ErrorKind::Unsupported,
         "系統播放器不支援此平台",
     ))
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppInfo {
+    app_version: &'static str,
+    library_version: &'static str,
+    supported_audio_extensions: &'static [&'static str],
+}
+
+#[tauri::command]
+pub fn app_info() -> AppInfo {
+    AppInfo {
+        app_version: env!("CARGO_PKG_VERSION"),
+        library_version: mavc::VERSION,
+        supported_audio_extensions: mavc::SUPPORTED_AUDIO_EXTENSIONS,
+    }
+}
+
+#[cfg(test)]
+#[allow(dead_code)]
+#[path = "../../src/app/models.rs"]
+mod frontend_models;
+
+#[cfg(test)]
+mod compatibility_tests {
+    use super::*;
+
+    #[test]
+    fn version_and_capabilities_match_frontend_contract() {
+        let info: frontend_models::AppInfo =
+            serde_json::from_value(serde_json::to_value(app_info()).unwrap()).unwrap();
+        assert_eq!(info.app_version, env!("CARGO_PKG_VERSION"));
+        assert_eq!(info.library_version, mavc::VERSION);
+        assert_eq!(
+            info.supported_audio_extensions,
+            mavc::SUPPORTED_AUDIO_EXTENSIONS
+        );
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+        assert_eq!(config["version"], info.app_version);
+        assert!(include_str!("../../Cargo.toml")
+            .contains(&format!("version = \"{}\"", info.app_version)));
+    }
+
+    #[test]
+    fn updated_library_archives_remain_readable_by_frontend() {
+        let directory =
+            std::env::temp_dir().join(format!("malbum-api-{}-{}", std::process::id(), timestamp()));
+        std::fs::create_dir_all(&directory).unwrap();
+        struct Cleanup(PathBuf);
+        impl Drop for Cleanup {
+            fn drop(&mut self) {
+                let _ = std::fs::remove_dir_all(&self.0);
+            }
+        }
+        let _cleanup = Cleanup(directory.clone());
+        for extension in mavc::SUPPORTED_AUDIO_EXTENSIONS {
+            let source = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../mavc/tests/fixtures")
+                .join(format!("silence.{extension}"));
+            let output = directory.join(format!("{extension}.mavc"));
+            let output_string = output.to_string_lossy().into_owned();
+            archive_create_music(
+                vec![source.to_string_lossy().into_owned()],
+                Some(output_string.clone()),
+            )
+            .unwrap();
+            let (_, info) = load_archive(&output_string).unwrap();
+            let frontend: frontend_models::ArchiveInfo =
+                serde_json::from_value(serde_json::to_value(&info).unwrap()).unwrap();
+            assert_eq!(frontend.tracks.len(), 1, "{extension}");
+            assert_eq!(frontend.tracks[0].id, info.tracks[0].track.id);
+            let playback = PlaybackData {
+                archive_title: info.title.clone(),
+                track: info.tracks[0].track.clone(),
+                src: "asset://localhost/audio".into(),
+            };
+            let decoded: frontend_models::PlaybackData =
+                serde_json::from_value(serde_json::to_value(playback).unwrap()).unwrap();
+            assert_eq!(decoded.archive_title, frontend.title);
+            assert_eq!(decoded.track.id, frontend.tracks[0].id);
+            archive_add(
+                vec![output_string.clone()],
+                vec![source.to_string_lossy().into_owned()],
+            )
+            .unwrap();
+            assert_eq!(load_archive(&output_string).unwrap().1.tracks.len(), 2);
+            let id = load_archive(&output_string).unwrap().1.tracks[1].track.id;
+            archive_remove(vec![output_string.clone()], vec![id]).unwrap();
+            assert_eq!(load_archive(&output_string).unwrap().1.tracks.len(), 1);
+        }
+    }
 }

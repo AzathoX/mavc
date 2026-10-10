@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "專輯館",
+  "productName": "malbum",
   "version": "0.1.0",
   "identifier": "org.mavc.app",
   "build": {
@@ -13,11 +13,12 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "專輯館 · MAVC",
+        "title": "malbum",
         "width": 1280,
         "height": 900,
         "minWidth": 940,
-        "minHeight": 720
+        "minHeight": 720,
+        "backgroundColor": "#101018"
       }
     ],
     "security": {
@@ -37,6 +38,24 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "fileAssociations": [
+      {
+        "ext": [
+          "mavc"
+        ],
+        "name": "MAVC music archive",
+        "description": "malbum music archive",
+        "role": "Editor",
+        "rank": "Owner",
+        "mimeType": "application/x-mavc",
+        "exportedType": {
+          "identifier": "org.mavc.archive",
+          "conformsTo": [
+            "public.data"
+          ]
+        }
+      }
     ]
   }
 }

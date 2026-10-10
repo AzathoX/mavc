@@ -1,0 +1,25 @@
+新增歌曲：
+  -+ 是新增歌曲的短命令，等同於 --add 和 add。
+  mavc do -+ song.mp3 other.flac --to collection.mavc
+  mavc do add song.mp3 other.flac --to a.mavc b.mavc
+  支援音訊：MP3、FLAC、AAC（ADTS）、WAV（PCM／IEEE 浮點）、OGG（Vorbis）。匯入會先檢查，再寫入歸檔。
+
+移除曲目（使用 ID，不是音訊檔案路徑）：
+  mavc list collection.mavc
+  mavc do -x 0 2 --from collection.mavc
+
+先匯出再移除（可選）：
+  mavc do --remove 0 2 --from collection.mavc --to ./export
+  mavc do -x 0 --from collection.mavc --to ./export ./backup
+
+參數規則：
+  -+ / --add / add：新增歌曲；-x / --remove / remove：移除曲目 ID。
+  --from 支援多個歸檔；--to 支援多個目標，也可重複使用。
+  省略 --to 時直接移除；指定後會以原檔名匯出歌曲。
+  自動建立匯出目錄，全部匯出成功後才開始移除。
+  已有檔案、同名衝突或匯出失敗會中止移除並保留歸檔中的歌曲。
+  不限制曲目數或音訊容量。
+
+詳細選項：
+  mavc do --add --help
+  mavc do --remove --help

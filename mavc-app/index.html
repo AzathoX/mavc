@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>malbum</title>
+  <style>
+    html,body { margin:0; min-height:100%; background:#101018; }
+    #main { visibility:hidden; }
+    #malbum-boot { position:fixed; inset:0; z-index:2147483647; display:grid; place-content:center; justify-items:center; gap:22px; background:radial-gradient(ellipse at 50% 40%,#25202b,#101018 65%); color:#ddc18a; font:14px system-ui,sans-serif; text-align:center; }
+    .boot-watch { width:116px; height:116px; overflow:visible; filter:drop-shadow(0 0 24px #d2aa5233); animation:watch-turn 3.6s linear infinite; }
+    .boot-name { font:500 30px Georgia,serif; letter-spacing:.08em; margin:0; }
+    #boot-message { color:#b2a99c; margin:0; }
+    #boot-retry { border:1px solid #82693c; border-radius:20px; padding:8px 20px; color:#ddc18a; background:#1e1b24; cursor:pointer; font:inherit; }
+    #boot-retry[hidden] { display:none; }
+    html[data-malbum-ready] #main { visibility:visible; }
+    html[data-malbum-ready] #malbum-boot { display:none; }
+    @keyframes watch-turn { to { transform:rotate(360deg); } }
+    @media(prefers-reduced-motion:reduce) { .boot-watch { animation:none; } }
+  </style>
+</head>
+<body>
+  <!-- Inline artwork and CSS render before WASM, fonts and app assets load. -->
+  <section id="malbum-boot" role="status" aria-live="polite" aria-busy="true">
+    <svg class="boot-watch" viewBox="0 0 120 120" aria-hidden="true">
+      <defs><linearGradient id="boot-gold" x2="1" y2="1"><stop stop-color="#f2db9a"/><stop offset=".4" stop-color="#a7782b"/><stop offset=".7" stop-color="#ecd08b"/><stop offset="1" stop-color="#906324"/></linearGradient></defs>
+      <rect x="53" y="8" width="14" height="14" rx="4" fill="url(#boot-gold)"/>
+      <ellipse cx="60" cy="8" rx="10" ry="7" stroke="#d9b96f" stroke-width="3" fill="#17151c"/>
+      <circle cx="60" cy="68" r="46" fill="url(#boot-gold)"/>
+      <circle cx="60" cy="68" r="40" fill="#17151e" stroke="#e5c57d"/>
+      <circle cx="60" cy="68" r="34" fill="none" stroke="#b49559" stroke-width="2" stroke-dasharray="1 16.8"/>
+      <path d="M60 41v27l18 12" fill="none" stroke="#e5c57d" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="60" cy="68" r="3" fill="#f3d99a"/>
+    </svg>
+    <h1 class="boot-name">malbum</h1>
+    <p id="boot-message">Loading…</p>
+    <button id="boot-retry" hidden type="button" onclick="location.reload()">Retry</button>
+  </section>
+  <div id="main"></div>
+  <script>
+    (() => {
+      let copy;
+      window.malbumSetLanguage = code => {
+      const language = (code || 'en').toLowerCase();
+      document.documentElement.lang = code || 'en';
+      copy = language.startsWith('zh')
+        ? (/(tw|hk|mo|hant)/.test(language) ? ['正在載入…','載入時間較長，請稍候或重試。','重新載入'] : ['正在加载…','加载时间较长，请稍候或重试。','重新加载'])
+        : language.startsWith('ja') ? ['読み込み中…','時間がかかっています。お待ちいただくか、再試行してください。','再試行']
+        : ['Loading…','Loading is taking longer. Please wait or retry.','Retry'];
+      document.getElementById('boot-message').textContent = copy[0];
+      document.getElementById('boot-retry').textContent = copy[2];
+      };
+      window.malbumSetLanguage(navigator.languages?.[0] || navigator.language || 'en');
+      const slow = setTimeout(() => {
+        document.getElementById('boot-message').textContent = copy[1];
+        document.getElementById('boot-retry').hidden = false;
+      }, 15000);
+      window.malbumReveal = async () => {
+        // Do not uncover an unstyled Dioxus tree. The marker is supplied by
+        // the real application stylesheet, not by this independent splash.
+        await new Promise(resolve => {
+          function check() {
+            if (getComputedStyle(document.documentElement).getPropertyValue('--malbum-styles-ready').trim() === '1') resolve();
+            else requestAnimationFrame(check);
+          }
+          check();
+        });
+        await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 2000))]);
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        clearTimeout(slow);
+        document.documentElement.dataset.malbumReady = 'true';
+        document.getElementById('malbum-boot').setAttribute('aria-busy', 'false');
+      };
+    })();
+  </script>
+</body>
+</html>

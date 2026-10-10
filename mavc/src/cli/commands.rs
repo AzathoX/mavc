@@ -1,4 +1,4 @@
-use super::args::Commands;
+use super::args::{Commands, DoAction};
 use mavc::{Archive, CreateManifest, add_tracks, create_archive, music, remove_tracks};
 use std::fs::File;
 use std::io::Read;
@@ -6,6 +6,12 @@ use std::path::{Path, PathBuf};
 
 pub(super) fn run(command: Commands) -> Result<(), Box<dyn std::error::Error>> {
     match command {
+        Commands::Do(args) => {
+            return run(match args.action {
+                DoAction::Add(args) => Commands::Add(args),
+                DoAction::Remove(args) => Commands::Remove(args),
+            });
+        }
         Commands::Package(args) => {
             if !args.files.is_empty() {
                 if args.manifest.is_some() || args.manifest_output.is_some() {
@@ -32,6 +38,7 @@ pub(super) fn run(command: Commands) -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         Commands::Remove(args) => {
+            export_before_remove(&args.archives, &args.ids, &args.outputs)?;
             remove_tracks(&args.archives, &args.ids)?;
             for path in args.archives {
                 println!("Updated {}", path.display());
@@ -162,5 +169,72 @@ fn create_from_music_list(
     }
     let output = builder.create()?;
     println!("Created {} with {track_count} tracks", output.display());
+    Ok(())
+}
+
+fn export_before_remove(
+    archives: &[PathBuf],
+    ids: &[usize],
+    directories: &[PathBuf],
+) -> Result<(), Box<dyn std::error::Error>> {
+    if directories.is_empty() {
+        return Ok(());
+    }
+    let mut jobs = Vec::new();
+    let mut targets = std::collections::HashSet::new();
+    // Validate the complete export plan before writing or deleting any songs.
+    for path in archives {
+        let archive = Archive::open(path)?;
+        let mut seen_ids = std::collections::HashSet::new();
+        for id in ids {
+            if !seen_ids.insert(*id) {
+                continue;
+            }
+            let track = archive
+                .index
+                .tracks
+                .iter()
+                .find(|track| track.id == *id)
+                .ok_or_else(|| format!("no track with id {id} in {}", path.display()))?;
+            let filename = Path::new(&track.file_name)
+                .file_name()
+                .filter(|name| !name.is_empty())
+                .ok_or("track has no usable filename")?;
+            for directory in directories {
+                std::fs::create_dir_all(directory)?;
+                let target = std::fs::canonicalize(directory)?.join(filename);
+                if target.exists() || !targets.insert(target.to_string_lossy().to_lowercase()) {
+                    return Err(format!(
+                        "{} already exists or has a duplicate export filename",
+                        target.display()
+                    )
+                    .into());
+                }
+                jobs.push((archive.clone(), path.clone(), *id, target, track.length));
+            }
+        }
+    }
+    for (archive, source, id, target, length) in jobs {
+        let mut input = archive.open_track(&source, id)?;
+        let mut output = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&target)?;
+        let result = (|| -> std::io::Result<()> {
+            if std::io::copy(&mut input, &mut output)? != length {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::UnexpectedEof,
+                    "incomplete track export",
+                ));
+            }
+            output.sync_all()
+        })();
+        if let Err(error) = result {
+            drop(output);
+            let _ = std::fs::remove_file(&target);
+            return Err(error.into());
+        }
+        println!("Exported track {id} to {}", target.display());
+    }
     Ok(())
 }

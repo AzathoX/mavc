@@ -1,0 +1,25 @@
+Audiodateien hinzufügen:
+  -+ ist der Kurzbefehl zum Hinzufügen von Titeln; er entspricht --add und add.
+  mavc do -+ song.mp3 other.flac --to collection.mavc
+  mavc do add song.mp3 other.flac --to a.mavc b.mavc
+  Unterstützte Audiodateien: MP3, FLAC, AAC (ADTS), WAV (PCM / IEEE-Gleitkomma), OGG (Vorbis). Audio wird vor dem Schreiben geprüft.
+
+Titel entfernen (IDs, keine Audiodateipfade):
+  mavc list collection.mavc
+  mavc do -x 0 2 --from collection.mavc
+
+Vor dem Entfernen exportieren (optional):
+  mavc do --remove 0 2 --from collection.mavc --to ./export
+  mavc do -x 0 --from collection.mavc --to ./export ./backup
+
+Regeln:
+  -+ / --add / add fügt Titel hinzu; -x / --remove / remove entfernt Titel anhand ihrer IDs.
+  --from akzeptiert mehrere Archive. --to akzeptiert mehrere Ziele und kann wiederholt werden.
+  Ohne --to werden Titel direkt entfernt. Mit --to werden sie unter ihren ursprünglichen Dateinamen exportiert.
+  Exportverzeichnisse werden automatisch erstellt. Erst nach vollständigem Export beginnt das Entfernen.
+  Vorhandene Dateien, doppelte Dateinamen oder Exportfehler verhindern das Entfernen und erhalten die Titel.
+  Keine konfigurierte Begrenzung der Titelanzahl oder Audiodatenmenge.
+
+Detaillierte Optionen:
+  mavc do --add --help
+  mavc do --remove --help

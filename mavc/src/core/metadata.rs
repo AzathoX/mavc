@@ -17,8 +17,10 @@ pub(super) fn codec_for(path: &Path) -> Result<&'static str, Error> {
         "mp3" => Ok("mp3"),
         "flac" => Ok("flac"),
         "aac" => Ok("aac"),
+        "wav" => Ok("wav"),
+        "ogg" => Ok("ogg"),
         ext => Err(Error::Invalid(format!(
-            "unsupported audio extension '.{ext}' (use MP3, FLAC, or AAC)"
+            "unsupported audio extension '.{ext}' (use MP3, FLAC, AAC, WAV, or OGG)"
         ))),
     }
 }

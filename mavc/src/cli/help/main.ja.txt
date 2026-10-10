@@ -1,0 +1,42 @@
+アーカイブの作成：
+  mavc package -m song.mp3 other.flac -a collection.mavc
+  mavc package manifest.json collection.mavc
+  mavc music -m song.mp3 [-a collection.mavc]
+  mavc create manifest.json collection.mavc
+  -a を省略すると、1 曲は <filename>.mavc、複数曲は music.mavc になります。
+  対応音声：MP3、FLAC、AAC（ADTS）、WAV（PCM / IEEE 浮動小数点）、OGG（Vorbis）。書き込む前に音声を検証します。
+
+アーカイブの変更：
+  -+ は曲を追加する短縮コマンドで、--add および add と同じです。
+  mavc do -+ song.mp3 --to collection.mavc
+  mavc do -x 0 2 --from collection.mavc [--to ./export]
+  削除時の --to は任意の書き出し先ディレクトリです。すべての書き出しが成功してから削除します。
+  --to を省略すると直接削除します。音声パスではなく mavc list のトラック ID を指定してください。
+
+情報表示とトラック選択：
+  mavc list collection.mavc
+  mavc inspect collection.mavc [track-id]
+  mavc inspect <track-id> collection.mavc
+  mavc pick collection.mavc
+
+再生：
+  mavc play collection.mavc
+  mavc play -o 0 collection.mavc
+  mavc play --all collection.mavc
+  mavc play -c 0 1 collection.mavc
+  mavc play -sp collection.mavc
+  mavc play -bp collection.mavc
+  既定は重みに基づくランダム再生。-o：指定曲、--all：順番に再生、-c：同時ミックス。
+  -sp：システムプレーヤー、-bp：ブラウザープレーヤー。
+
+重みと書き出し：
+  mavc weight collection.mavc 0=0.25
+  mavc extract collection.mavc 0 [output.mp3]
+  mavc extract collection.mavc --all
+  重みは 0 から 1 の範囲です。1 曲を更新すると他の曲の重みが再配分されます。
+  extract --all は現在のディレクトリに書き出します。既存ファイルや同名の競合は拒否します。
+
+ヘルプとバージョン：
+  mavc --help / mavc help
+  mavc <command> --help / mavc help <command>
+  mavc --version / mavc -V / mavc -v
