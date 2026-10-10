@@ -23,6 +23,8 @@ jobs:
     # 2. 设置 Rust 环境（GitHub 官方提供的 Action 会自动安装最新版 Rust 和 Cargo）
     - name: Set up Rust toolchain
       uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
 
     # 3. 开启 Rust 编译缓存，这能让以后每次编译速度提升 5 倍以上
     - name: Rust Cache
@@ -61,10 +63,23 @@ jobs:
     - name: Install Tauri CLI
       run: cargo install tauri-cli --version "^2.0.0" --locked
 
-    # macOS builds a distributable DMG that contains the MAVC app bundle.
+    # Fetch desktop dependencies before the offline macOS build.
+    - name: Fetch macOS app dependencies
+      if: runner.os == 'macOS'
+      run: cargo fetch --locked
+      working-directory: mavc-app
+
+    - name: Bundle macOS frontend
+      if: runner.os == 'macOS'
+      run: dx bundle --release
+      working-directory: mavc-app
+
+    # The frontend is already bundled above; disable the duplicate build hook.
     - name: Package MAVC for macOS
       if: runner.os == 'macOS'
-      run: cargo tauri build --bundles dmg
+      run: |
+        cargo tauri build --config '{"build":{"beforeBuildCommand":""}}' --bundles app --ci -- --offline
+        ditto -c -k --sequesterRsrc --keepParent target/release/bundle/macos/malbum.app target/release/bundle/macos/malbum-macos.zip
       working-directory: mavc-app
 
     # Linux and Windows currently export their native app binaries without installers.
@@ -85,11 +100,11 @@ jobs:
           mavc-app/target/release/mavc-app.exe
         retention-days: 7
 
-    - name: Upload MAVC macOS DMG
+    - name: Upload malbum macOS App
       if: runner.os == 'macOS'
       uses: actions/upload-artifact@v4
       with:
-        name: mavc-macos-dmg
-        path: mavc-app/target/release/bundle/dmg/*.dmg
+        name: malbum-macos-app
+        path: mavc-app/target/release/bundle/macos/malbum-macos.zip
         if-no-files-found: error
         retention-days: 7
