@@ -19,6 +19,18 @@ for more players in the future.
 
 Imports through `add`, `package`, and `music` are fully decoded before writing an archive. Invalid frames, truncated audio, decoding errors, and available checksum failures reject the import with the source path. All sources in an add batch are checked before any destination is updated. Validation takes additional time for longer audio. WAV chunk lengths and sample alignment are checked; OGG page checksums, page sequences, packet continuation, and end-of-stream markers are checked. OGG Opus and chained/multiplexed OGG streams are not supported.
 
+## Notice: opening malbum on macOS
+
+The current macOS build uses an ad-hoc signature and has not been notarized by Apple. When you first open malbum, macOS may display “Apple could not verify ‘malbum’ is free of malware that may harm your Mac or compromise your privacy.” This means Gatekeeper cannot verify the app's developer and notarization status; an ad-hoc signature alone does not provide Apple's approval.
+
+I'm sorry for the extra steps this adds to your first launch. If you built the app yourself or have checked and trust its source, you can allow this app to open:
+
+1. Try opening malbum once.
+2. Open **System Settings → Privacy & Security**.
+3. Find the message about malbum, click **Open Anyway**, and confirm when prompted.
+
+Please only proceed if you trust the source of your copy. Thank you for your patience and understanding. See [Apple's guidance on opening apps safely](https://support.apple.com/en-us/102445) for more information.
+
 ## CLI help
 
 Run `mavc --help`, `mavc -h`, or `mavc help` to display this command list.
