@@ -1,0 +1,25 @@
+Add audio files:
+  -+ is the short command for adding songs; it is equivalent to --add and add.
+  mavc do -+ song.mp3 other.flac --to collection.mavc
+  mavc do add song.mp3 other.flac --to a.mavc b.mavc
+  Supported audio: MP3, FLAC, AAC (ADTS), WAV (PCM / IEEE float), OGG (Vorbis). Imports are checked before writing.
+
+Remove tracks (IDs, not audio paths):
+  mavc list collection.mavc
+  mavc do -x 0 2 --from collection.mavc
+
+Export before removal (optional):
+  mavc do --remove 0 2 --from collection.mavc --to ./export
+  mavc do -x 0 --from collection.mavc --to ./export ./backup
+
+Rules:
+  -+ / --add / add adds songs; -x / --remove / remove removes track IDs.
+  --from accepts multiple archives. --to accepts multiple destinations and can be repeated.
+  Without --to, removal deletes tracks directly. With --to, songs are exported under their original filenames.
+  Export directories are created automatically. All exports must succeed before removal starts.
+  Existing files, duplicate output names, or export failures stop removal and preserve archive tracks.
+  No configured track-count or audio-payload limit.
+
+Detailed options:
+  mavc do --add --help
+  mavc do --remove --help

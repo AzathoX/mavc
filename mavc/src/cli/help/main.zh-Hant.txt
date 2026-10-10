@@ -1,0 +1,42 @@
+建立歸檔：
+  mavc package -m song.mp3 other.flac -a collection.mavc
+  mavc package manifest.json collection.mavc
+  mavc music -m song.mp3 [-a collection.mavc]
+  mavc create manifest.json collection.mavc
+  省略 -a 時，單首產生 <filename>.mavc，多首產生 music.mavc。
+  支援音訊：MP3、FLAC、AAC（ADTS）、WAV（PCM／IEEE 浮點）、OGG（Vorbis）。匯入會先檢查，再寫入歸檔。
+
+修改歸檔：
+  -+ 是新增歌曲的短命令，等同於 --add 和 add。
+  mavc do -+ song.mp3 --to collection.mavc
+  mavc do -x 0 2 --from collection.mavc [--to ./export]
+  移除時 --to 是可選匯出目錄，全部匯出成功後才開始移除。
+  省略 --to 則直接移除。請使用 mavc list 查到的曲目 ID，而非音訊路徑。
+
+查詢與選曲：
+  mavc list collection.mavc
+  mavc inspect collection.mavc [track-id]
+  mavc inspect <track-id> collection.mavc
+  mavc pick collection.mavc
+
+播放：
+  mavc play collection.mavc
+  mavc play -o 0 collection.mavc
+  mavc play --all collection.mavc
+  mavc play -c 0 1 collection.mavc
+  mavc play -sp collection.mavc
+  mavc play -bp collection.mavc
+  預設依權重隨機播放。-o：指定曲目；--all：依序播放；-c：同時混音。
+  -sp：系統播放器；-bp：瀏覽器播放器。
+
+權重與匯出：
+  mavc weight collection.mavc 0=0.25
+  mavc extract collection.mavc 0 [output.mp3]
+  mavc extract collection.mavc --all
+  權重必須介於 0 與 1；更新一首時會重新分配其餘曲目的權重。
+  extract --all 匯出到目前目錄，拒絕已有檔案或同名衝突。
+
+幫助與版本：
+  mavc --help / mavc help
+  mavc <command> --help / mavc help <command>
+  mavc --version / mavc -V / mavc -v

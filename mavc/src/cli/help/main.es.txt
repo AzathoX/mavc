@@ -1,0 +1,42 @@
+Crear archivos:
+  mavc package -m song.mp3 other.flac -a collection.mavc
+  mavc package manifest.json collection.mavc
+  mavc music -m song.mp3 [-a collection.mavc]
+  mavc create manifest.json collection.mavc
+  Sin -a, un archivo genera <filename>.mavc; varios generan music.mavc.
+  Audio compatible: MP3, FLAC, AAC (ADTS), WAV (PCM / IEEE flotante), OGG (Vorbis). El audio se verifica antes de escribir.
+
+Modificar archivos:
+  -+ es el comando corto para añadir canciones; equivale a --add y add.
+  mavc do -+ song.mp3 --to collection.mavc
+  mavc do -x 0 2 --from collection.mavc [--to ./export]
+  Al eliminar, --to indica un directorio de exportación opcional. Se exporta todo antes de eliminar.
+  Sin --to, las pistas se eliminan directamente. Use los ID de mavc list, no rutas de audio.
+
+Consultar y seleccionar pistas:
+  mavc list collection.mavc
+  mavc inspect collection.mavc [track-id]
+  mavc inspect <track-id> collection.mavc
+  mavc pick collection.mavc
+
+Reproducción:
+  mavc play collection.mavc
+  mavc play -o 0 collection.mavc
+  mavc play --all collection.mavc
+  mavc play -c 0 1 collection.mavc
+  mavc play -sp collection.mavc
+  mavc play -bp collection.mavc
+  Por defecto: selección aleatoria ponderada. -o: una pista; --all: secuencial; -c: mezcla simultánea.
+  -sp: reproductor del sistema; -bp: reproductor del navegador.
+
+Pesos y extracción:
+  mavc weight collection.mavc 0=0.25
+  mavc extract collection.mavc 0 [output.mp3]
+  mavc extract collection.mavc --all
+  Los pesos deben estar entre 0 y 1. Actualizar una pista redistribuye el peso restante.
+  extract --all escribe en el directorio actual y rechaza nombres existentes o duplicados.
+
+Ayuda y versión:
+  mavc --help / mavc help
+  mavc <command> --help / mavc help <command>
+  mavc --version / mavc -V / mavc -v

@@ -164,6 +164,8 @@ impl Archive {
             "mp3" => FileType::Mpeg,
             "flac" => FileType::Flac,
             "aac" => FileType::Aac,
+            "wav" => FileType::Wav,
+            "ogg" => FileType::Vorbis,
             _ => return Ok(track.metadata.clone()),
         };
         let reader = self.open_track(archive_path, track_id)?;

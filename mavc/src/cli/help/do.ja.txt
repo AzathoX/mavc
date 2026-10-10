@@ -1,0 +1,25 @@
+音声ファイルの追加：
+  -+ は曲を追加する短縮コマンドで、--add および add と同じです。
+  mavc do -+ song.mp3 other.flac --to collection.mavc
+  mavc do add song.mp3 other.flac --to a.mavc b.mavc
+  対応音声：MP3、FLAC、AAC（ADTS）、WAV（PCM / IEEE 浮動小数点）、OGG（Vorbis）。書き込む前に音声を検証します。
+
+トラックの削除（音声パスではなく ID を指定）：
+  mavc list collection.mavc
+  mavc do -x 0 2 --from collection.mavc
+
+書き出してから削除（任意）：
+  mavc do --remove 0 2 --from collection.mavc --to ./export
+  mavc do -x 0 --from collection.mavc --to ./export ./backup
+
+引数の規則：
+  -+ / --add / add：曲の追加。-x / --remove / remove：トラック ID の削除。
+  --from は複数のアーカイブ、--to は複数の出力先を指定でき、繰り返しも可能です。
+  --to を省略すると直接削除します。指定すると元のファイル名で書き出します。
+  出力先ディレクトリは自動作成します。すべての書き出しが成功してから削除します。
+  既存ファイル、同名の競合、書き出し失敗がある場合は削除せずアーカイブの曲を保持します。
+  トラック数や音声データ容量の設定上限はありません。
+
+詳細オプション：
+  mavc do --add --help
+  mavc do --remove --help
