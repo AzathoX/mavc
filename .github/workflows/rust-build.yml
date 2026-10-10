@@ -63,10 +63,10 @@ jobs:
     - name: Install Tauri CLI
       run: cargo install tauri-cli --version "^2.0.0" --locked
 
-    # Fetch desktop dependencies before the offline macOS build.
+    # Fetch dependencies and create Cargo.lock if this checkout has none.
     - name: Fetch macOS app dependencies
       if: runner.os == 'macOS'
-      run: cargo fetch --locked
+      run: cargo fetch
       working-directory: mavc-app
 
     - name: Bundle macOS frontend

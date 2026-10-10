@@ -1,5 +1,5 @@
 /dist/
 /target/
-/Cargo.lock
+# Track Cargo.lock for reproducible desktop application builds.
 .DS_Store
 .DS_Store
