@@ -5,6 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/mavc-app/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/mavc-app/src-tauri/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/mavc/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/mavc/tests" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/mavc-app/target" />
       <excludeFolder url="file://$MODULE_DIR$/mavc/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />

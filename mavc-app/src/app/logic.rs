@@ -6,7 +6,7 @@ pub(super) use super::{
     bridge::command,
     formatting::{display_title, format_time_seconds, optional},
     i18n::{Language, tr},
-    models::{ArchiveInfo, MixedSource, PlaybackData, Track},
+    models::{AppInfo, ArchiveInfo, MixedSource, PlaybackData, Track},
     playback::{seek_audio_to, seek_combined_track, set_audio_playing},
 };
 
@@ -14,6 +14,7 @@ pub(super) use super::{
 pub(super) struct AppState {
     pub(super) language: Signal<Language>,
     pub(super) apple_theme: Signal<bool>,
+    pub(super) app_info: Signal<Option<AppInfo>>,
     pub(super) archive_path: Signal<String>,
     pub(super) archive_info: Signal<Option<ArchiveInfo>>,
     pub(super) selected_track: Signal<Option<usize>>,
@@ -40,29 +41,25 @@ pub(super) struct AppState {
 
 /// Create all persistent UI state in a stable hook order.
 pub(super) fn use_app_state() -> AppState {
-    let language = use_signal(|| Language::TraditionalChinese);
-    let apple_theme = use_signal(|| true);
-    let archive_path = use_signal(String::new);
-    let archive_info = use_signal(|| None::<ArchiveInfo>);
-    let selected_track = use_signal(|| None::<usize>);
-    let combine_ids = use_signal(Vec::<usize>::new);
-    let playback_selection = use_signal(Vec::<usize>::new);
-    let audio_src = use_signal(|| None::<String>);
+    let mut language = use_signal(|| Language::English);
+    let mut app_info = use_signal(|| None::<AppInfo>);
+    let apple_theme = use_signal(|| false);
+    let mut archive_path = use_signal(String::new);
+    let mut archive_info = use_signal(|| None::<ArchiveInfo>);
+    let mut selected_track = use_signal(|| None::<usize>);
+    let mut combine_ids = use_signal(Vec::<usize>::new);
+    let mut playback_selection = use_signal(Vec::<usize>::new);
+    let mut audio_src = use_signal(|| None::<String>);
     let audio_nonce = use_signal(|| 0usize);
-    let combined_sources = use_signal(Vec::<MixedSource>::new);
-    let is_paused = use_signal(|| false);
-    let current_time = use_signal(|| 0.0f64);
-    let total_time = use_signal(|| 0.0f64);
-    let playback_mode = use_signal(|| "idle".to_string());
-    let status = use_signal(|| {
-        tr(
-            Language::TraditionalChinese,
-            "載入一個 .mavc 封存即可開始聆聽。",
-        )
-        .to_string()
-    });
-    let status_error = use_signal(|| false);
-    let editing_track = use_signal(|| false);
+    let mut combined_sources = use_signal(Vec::<MixedSource>::new);
+    let mut is_paused = use_signal(|| false);
+    let mut current_time = use_signal(|| 0.0f64);
+    let mut total_time = use_signal(|| 0.0f64);
+    let mut playback_mode = use_signal(|| "idle".to_string());
+    let mut status =
+        use_signal(|| tr(Language::English, "載入一個 .mavc 封存即可開始聆聽。").to_string());
+    let mut status_error = use_signal(|| false);
+    let mut editing_track = use_signal(|| false);
     let edit_title = use_signal(String::new);
     let edit_artist = use_signal(String::new);
     let edit_album = use_signal(String::new);
@@ -71,8 +68,107 @@ pub(super) fn use_app_state() -> AppState {
     let edit_cover = use_signal(String::new);
     let edit_weight = use_signal(String::new);
 
+    use_future(move || async move {
+        use super::bridge;
+        let desktop = bridge::desktop_available();
+        let code = if desktop {
+            command::<String>("system_language", serde_json::json!({}))
+                .await
+                .unwrap_or_else(|_| "en".into())
+        } else {
+            bridge::browser_language()
+        };
+        let initial_language = Language::from_code(&code);
+        language.set(initial_language);
+        bridge::set_boot_language(initial_language.code());
+        status.set(tr(initial_language, "載入一個 .mavc 封存即可開始聆聽。").into());
+        if !desktop {
+            bridge::reveal_interface().await;
+            return;
+        }
+        match command::<AppInfo>("app_info", serde_json::json!({})).await {
+            Ok(info) if info.app_version == env!("CARGO_PKG_VERSION") => app_info.set(Some(info)),
+            Ok(info) => {
+                status.set(format!(
+                    "Frontend {} / backend {}: rebuild malbum to use matching packages.",
+                    env!("CARGO_PKG_VERSION"),
+                    info.app_version
+                ));
+                status_error.set(true);
+                bridge::reveal_interface().await;
+                return;
+            }
+            Err(error) => {
+                status.set(error);
+                status_error.set(true);
+                bridge::reveal_interface().await;
+                return;
+            }
+        }
+        // Subscribe before draining the queue: no startup/second-open request
+        // can be lost between the initial fetch and event registration.
+        if let Err(error) = bridge::watch_open_files().await {
+            status.set(format!("Unable to receive opened files: {error:?}"));
+            status_error.set(true);
+            bridge::reveal_interface().await;
+            return;
+        }
+        let mut first = true;
+        loop {
+            match command::<Vec<String>>("pending_open_files", serde_json::json!({})).await {
+                Ok(paths) => {
+                    for path in paths {
+                        let lang = *language.peek();
+                        status.set(tr(lang, "正在重新載入封存…").into());
+                        match command::<ArchiveInfo>(
+                            "archive_list",
+                            serde_json::json!({"path": path}),
+                        )
+                        .await
+                        {
+                            Ok(archive) => {
+                                archive_path.set(archive.path.clone());
+                                selected_track.set(None);
+                                combine_ids.set(Vec::new());
+                                playback_selection.set(Vec::new());
+                                audio_src.set(None);
+                                combined_sources.set(Vec::new());
+                                is_paused.set(false);
+                                current_time.set(0.0);
+                                total_time.set(0.0);
+                                playback_mode.set("idle".into());
+                                editing_track.set(false);
+                                status.set(format!(
+                                    "{}{}",
+                                    tr(lang, "已載入 MAVC 封存："),
+                                    archive.title
+                                ));
+                                archive_info.set(Some(archive));
+                                status_error.set(false);
+                            }
+                            Err(error) => {
+                                status.set(format!("{path}: {error}"));
+                                status_error.set(true);
+                            }
+                        }
+                    }
+                }
+                Err(error) => {
+                    status.set(error);
+                    status_error.set(true);
+                }
+            }
+            if first {
+                bridge::reveal_interface().await;
+                first = false;
+            }
+            bridge::next_open_files_event().await;
+        }
+    });
+
     AppState {
         language,
+        app_info,
         apple_theme,
         archive_path,
         archive_info,

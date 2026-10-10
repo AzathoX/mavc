@@ -126,7 +126,7 @@ fn normalize_add_file_position(argv: &mut Vec<std::ffi::OsString>) {
                 .extension()
                 .and_then(|extension| extension.to_str())
                 .is_some_and(|extension| {
-                    ["mp3", "flac", "aac", "wav", "ogg"]
+                    mavc::SUPPORTED_AUDIO_EXTENSIONS
                         .iter()
                         .any(|audio| extension.eq_ignore_ascii_case(audio))
                 });

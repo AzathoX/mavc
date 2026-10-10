@@ -54,3 +54,11 @@ pub(crate) struct MixedSource {
     pub(crate) position_seconds: f64,
     pub(crate) duration_seconds: f64,
 }
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AppInfo {
+    pub(crate) app_version: String,
+    pub(crate) library_version: String,
+    pub(crate) supported_audio_extensions: Vec<String>,
+}

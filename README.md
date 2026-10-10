@@ -2,18 +2,22 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
+For a source-by-source learning guide and code review in Traditional Chinese, see [the project walkthrough](README.learning.zh-TW.md), [mavc library and CLI](mavc/README.md), and [mavc-app desktop UI and backend](mavc-app/README.md).
+
 Hi,Have you ever noticed that a song can have several versions, such as English
 and Chinese versions, covers by different singers, or alternate arrangements?
 Each version takes several minutes to play, so listening through all of them
 can take a while. MAVC packages related versions into one `.mavc` archive and
 randomly selects a track when you play it, adding variety to each listen.
 
-MAVC is a Rust music archive library and command-line tool for MP3, FLAC, and
-AAC. Each archive contains a description, an MVLC music index, and the original
+MAVC is a Rust music archive library and command-line tool for MP3, FLAC,
+AAC (ADTS), WAV (PCM / IEEE float), and OGG (Vorbis). Each archive contains a description, an MVLC music index, and the original
 audio data. Track weights control how often each track is selected during
 weighted random playback. MAVC is currently in the refinement stage of version
 1.0. This is also a learning and research project, and I’ll explore support
 for more players in the future.
+
+Imports through `add`, `package`, and `music` are fully decoded before writing an archive. Invalid frames, truncated audio, decoding errors, and available checksum failures reject the import with the source path. All sources in an add batch are checked before any destination is updated. Validation takes additional time for longer audio. WAV chunk lengths and sample alignment are checked; OGG page checksums, page sequences, packet continuation, and end-of-stream markers are checked. OGG Opus and chained/multiplexed OGG streams are not supported.
 
 ## CLI help
 
@@ -29,8 +33,8 @@ Usage:
   mavc music -m <audio-file>... [-a <output.mavc>]
   mavc music -a <output.mavc> -m <audio-file>...
   mavc create <manifest.json> <output.mavc>
-  mavc [-+|--add] <audio-file>... --to <archive.mavc>...
-  mavc [-x|--remove] <track-id>... --from <archive.mavc>...
+  mavc do [-+|--add] <audio-file>... --to <archive.mavc>...
+  mavc do [-x|--remove] <track-id>... --from <archive.mavc>...
   mavc list <archive.mavc>
   mavc play [-r|--random | -o|--one <track-id> | -c|--combine <track-id> <track-id>...] [--all] [-sp|--system-player | -bp|--browser-player] <archive.mavc>
   mavc inspect <archive.mavc> [track-id]
@@ -48,18 +52,11 @@ Usage:
 - **`package <manifest.json> <output.mavc>`** — Package tracks described by a JSON manifest.
 - **`music -m <files>... [-a <output.mavc>]`** — Shortcut for packaging a music list with equal initial weights (`1 / track count`). The `-m` and `-a` options may appear in either order.
 - **`create <manifest.json> <output.mavc>`** — Alias for manifest-based packaging.
-- **`--add` / `-+ <files>... --to <archives>...`** — Add audio files to each archive; each resulting archive may contain at most 5 tracks and 150 MB of audio payload. New tracks start with weight 1.
-- **`--remove` / `-x <track-ids>... --from <archives>...`** — Remove at least two specified track IDs from each archive.
+- **`do --add` / `do -+ <files>... --to <archives>...`** — Add audio files to each archive; New tracks start with weight 1.
+- **`do --remove` / `do -x <track-ids>... --from <archives>...`** — Remove one or more specified track IDs from each archive.
 
-Archive limits are read from `mavc` in the current working directory. If the file is absent, MAVC uses 5 tracks and 150 MB by default. Configure them with:
+There is no configured track-count or audio-payload limit. Destination options may be repeated. Legacy top-level add/remove commands remain supported.
 
-```toml
-[limits]
-max_tracks = 5
-max_size_mb = 150
-```
-
-`max_size_mb` uses decimal megabytes (1 MB = 1,000,000 bytes) and applies to audio payload size.
 - **`list <archive.mavc>`** — List tracks and show their IDs, formats, and weights.
 - **`play [-r|--random] <archive.mavc>`** — Choose a track by its weight and play it with MAVC's built-in player. Random playback is the default.
 - **`play -o|--one <track-id> <archive.mavc>`** — Play one specified track ID.
@@ -240,3 +237,42 @@ The Tauri configuration starts the Dioxus development server with
 ## License
 
 MAVC is licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
+
+
+### Remove and export / 移除並匯出
+
+```sh
+mavc do -x 0 1 --from archive.mavc --to ./export
+mavc do --remove 0 --from a.mavc b.mavc --to ./export ./backup
+```
+
+`--to` is optional. Songs are exported using their original filenames before removal.
+Export directories are created as needed. Existing files and duplicate output names cause an error,
+leaving the archives unchanged. All exports must succeed before removal begins.
+Use `--from` for source archives and `--to` for export directories.
+
+`--to` 可省略；指定後會先以原檔名匯出歌曲，全部匯出成功後才移除。
+自動建立目錄；遇到已有檔案、輸出檔名衝突或匯出失敗時，保留歸檔中的歌曲。
+
+
+### Help language
+
+Help is available in English (default/fallback), Chinese (Simplified and Traditional), Japanese, Spanish, and German.
+MAVC checks `LC_ALL`, `LANGUAGE` (first colon-separated preference), `LC_MESSAGES`,
+and `LANG`, then the system UI language on macOS or Windows if no locale is set.
+`C`/`POSIX` locales force English; unsupported languages also use English.
+Command names, flags, and path placeholders are unchanged. This selection applies to
+`--help`, `help`, subcommand help, and the help shown without arguments.
+
+```sh
+LC_ALL=en_US.UTF-8 mavc --help
+LC_ALL=zh_TW.UTF-8 mavc do --help
+LC_ALL=ja_JP.UTF-8 mavc do --remove --help
+LC_ALL=es_ES.UTF-8 mavc do --help
+LC_ALL=de_DE.UTF-8 mavc do --help
+```
+
+
+Chinese help uses Simplified Chinese for `zh_CN`, `zh_SG`, or `zh-Hans`,
+and Traditional Chinese for `zh_TW`, `zh_HK`, `zh_MO`, or `zh-Hant`.
+An explicit script takes priority over the region. Bare `zh` uses Simplified Chinese.

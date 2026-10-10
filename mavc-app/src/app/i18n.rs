@@ -1,6 +1,6 @@
 //! UI language selection and translations.
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Language {
     SimplifiedChinese,
     TraditionalChinese,
@@ -19,16 +19,35 @@ impl Language {
     }
 
     pub(crate) fn from_code(code: &str) -> Self {
-        match code {
-            "zh-CN" => Self::SimplifiedChinese,
+        let code = code.trim().to_ascii_lowercase();
+        let locale = code.split(['.', '@']).next().unwrap_or("");
+        let parts = locale.split(['-', '_']).collect::<Vec<_>>();
+        match parts[0] {
+            "zh" => {
+                if parts.contains(&"hant") || parts.contains(&"cht") {
+                    Self::TraditionalChinese
+                } else if parts.contains(&"hans") || parts.contains(&"chs") {
+                    Self::SimplifiedChinese
+                } else if parts.iter().any(|part| matches!(*part, "tw" | "hk" | "mo")) {
+                    Self::TraditionalChinese
+                } else {
+                    Self::SimplifiedChinese
+                }
+            }
             "ja" => Self::Japanese,
-            "en" => Self::English,
-            _ => Self::TraditionalChinese,
+            _ => Self::English,
         }
     }
 }
 
 pub(crate) fn tr(language: Language, traditional: &'static str) -> &'static str {
+    if traditional == "專輯館" {
+        return match language {
+            Language::SimplifiedChinese => "专辑馆",
+            Language::TraditionalChinese => "專輯館",
+            Language::Japanese | Language::English => "malbum",
+        };
+    }
     match language {
         Language::TraditionalChinese => traditional,
         Language::SimplifiedChinese => match traditional {
@@ -438,5 +457,36 @@ pub(crate) fn tr(language: Language, traditional: &'static str) -> &'static str 
             }
             _ => traditional,
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn system_locale_selects_language_with_english_fallback() {
+        for (locale, expected) in [
+            ("en_US.UTF-8", Language::English),
+            ("zh_CN.UTF-8", Language::SimplifiedChinese),
+            ("zh-Hans-TW", Language::SimplifiedChinese),
+            ("zh-Hant-CN", Language::TraditionalChinese),
+            ("zh_HK", Language::TraditionalChinese),
+            ("zh-TW", Language::TraditionalChinese),
+            ("ja_JP.UTF-8", Language::Japanese),
+            ("de-DE", Language::English),
+            ("C", Language::English),
+            ("", Language::English),
+        ] {
+            assert_eq!(Language::from_code(locale), expected, "{locale}");
+        }
+    }
+
+    #[test]
+    fn application_name_follows_interface_language() {
+        assert_eq!(tr(Language::TraditionalChinese, "專輯館"), "專輯館");
+        assert_eq!(tr(Language::SimplifiedChinese, "專輯館"), "专辑馆");
+        assert_eq!(tr(Language::Japanese, "專輯館"), "malbum");
+        assert_eq!(tr(Language::English, "專輯館"), "malbum");
     }
 }

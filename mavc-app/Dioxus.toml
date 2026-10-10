@@ -5,8 +5,8 @@ out_dir = "dist"
 asset_dir = "assets"
 
 [web.app]
-title = "專輯館 · MAVC"
+title = "malbum"
 
 [web.watcher]
 reload_html = true
-watch_path = ["src", "assets"]
+watch_path = ["src", "assets", "index.html"]

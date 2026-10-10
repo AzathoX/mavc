@@ -1,5 +1,6 @@
 
 :root {
+  --malbum-styles-ready: 1;
   font-family: 'DM Sans', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
   color: #29332d;
   background: #f4f2ec;
@@ -517,8 +518,8 @@ body { background: #090b10; }
 :root:has(.app-shell.theme-apple) .make-archive-button { border: 0; border-radius: 11px; color: #fff; background: #fa2d48; box-shadow: 0 6px 16px #fa2d4826; font-size: 12px; letter-spacing: 0; }
 :root:has(.app-shell.theme-apple) .make-archive-button small { color: #ffffffbd; }
 :root:has(.app-shell.theme-apple) .make-archive-button:hover { background: #db1f3a; filter: none; box-shadow: 0 8px 18px #fa2d4833; }
-:root:has(.app-shell.theme-apple) .import-archive-button { color: #d91f3a; font-size: 12px; letter-spacing: 0; }
-:root:has(.app-shell.theme-apple) .import-archive-button small { color: #86868b; letter-spacing: .08em; }
+:root:has(.app-shell.theme-apple) .import-archive-button { border-radius: 11px; color: #d91f3a; font-size: 12px; letter-spacing: 0; }
+:root:has(.app-shell.theme-apple) .import-archive-button small { color: #c4a15a; letter-spacing: .08em; }
 :root:has(.app-shell.theme-apple) .combine-check { color: #d91f3a; }
 :root:has(.app-shell.theme-apple) .combine-check:hover { color: #ad1830; }
 :root:has(.app-shell.theme-apple) .weight-chip { color: #d91f3a; }
@@ -726,11 +727,13 @@ audio.audio-player::-webkit-media-controls-time-remaining-display { display: non
 
 .empty-state-actions {
     display: grid;
-    justify-items: center;
+    justify-items: stretch;
     gap: 18px;
 }
 
-.make-archive-button {
+.make-archive-button,
+.import-archive-button {
+    box-sizing: border-box;
     display: inline-flex;
     flex-direction: column;
     gap: 4px;
@@ -739,8 +742,11 @@ audio.audio-player::-webkit-media-controls-time-remaining-display { display: non
     align-items: center;
     justify-content: center;
     padding: 0 28px;
-    border: 1px solid rgba(196, 161, 90, 0.85);
     border-radius: 999px;
+}
+
+.make-archive-button {
+    border: 1px solid rgba(196, 161, 90, 0.85);
     background: linear-gradient(145deg, #c6a35b, #8f6d32);
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.38), inset 0 1px rgba(255, 238, 185, 0.45);
     color: #17130c;
@@ -765,11 +771,7 @@ audio.audio-player::-webkit-media-controls-time-remaining-display { display: non
 }
 
 .import-archive-button {
-    display: grid;
-    justify-items: center;
-    gap: 4px;
-    padding: 8px 18px;
-    border: 0;
+    border: 3px double #806632;
     background: transparent;
     color: var(--gold, #c4a15a);
     font: inherit;
@@ -778,7 +780,7 @@ audio.audio-player::-webkit-media-controls-time-remaining-display { display: non
 }
 
 .import-archive-button small {
-    color: #8b1e2d;
+    color: var(--gold, #c4a15a);
     font-size: 0.62rem;
     letter-spacing: 0.18em;
 }

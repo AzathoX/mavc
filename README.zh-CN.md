@@ -2,15 +2,19 @@
 
 [English](README.md) | **简体中文**
 
+源码学习与 code review（繁體中文）：[整体导读](README.learning.zh-TW.md) · [mavc 核心与 CLI](mavc/README.md) · [mavc-app 前后端](mavc-app/README.md)。这些文档以当前实现为准，并说明下文部分旧用法与代码的差异。
+
 您好！您是否也遇到过同一首歌有多个版本的情况？例如中英文版本、不同歌手
 的翻唱，或不同编曲版本。每个版本可能需要几分钟才能听完，因此把所有版本
 都听一遍需要不少时间。MAVC 可以将相关版本打包到同一个 `.mavc` 文件中，
 并在播放时随机选择其中一首，让每次收听都有更多变化。
 
-MAVC 是一个使用 Rust 编写的音乐归档库和命令行工具，支持 MP3、FLAC 和 AAC。
+MAVC 是一个使用 Rust 编写的音乐归档库和命令行工具，支持 MP3、FLAC、AAC（ADTS）、WAV（PCM／IEEE 浮点）和 OGG（Vorbis）。
 每个归档包含描述信息、MVLC 音乐索引和原始音频数据。曲目权重用于控制加权
 随机播放时各曲目被选中的频率。MAVC 目前处于 1.0 版本完善階段。这也是一个
 学习和研究的过程；未来会继续探索支持更多播放器的可能性。
+
+通过 `add`、`package` 和 `music` 导入时，会先完整解码音频，再写入归档。检测到无效帧、截断、解码错误或可用校验码失败时，会拒绝导入并显示源文件路径。批量新增会先检查全部源文件，再更新目标归档。较长音频的检查需要更多时间。WAV 会检查区块长度和样本对齐；OGG 会检查页面校验码、顺序、数据包连续性和结束标记。目前不支持 OGG Opus、多路或串接 OGG 流。
 
 ## 命令行帮助
 
@@ -26,8 +30,8 @@ Usage:
   mavc music -m <audio-file>... [-a <output.mavc>]
   mavc music -a <output.mavc> -m <audio-file>...
   mavc create <manifest.json> <output.mavc>
-  mavc [-+|--add] <音频文件>... --to <归档.mavc>...
-  mavc [-x|--remove] <曲目编号>... --from <归档.mavc>...
+  mavc do [-+|--add] <音频文件>... --to <归档.mavc>...
+  mavc do [-x|--remove] <曲目编号>... --from <归档.mavc>...
   mavc list <archive.mavc>
   mavc play [-r|--random | -o|--one <track-id> | -c|--combine <track-id> <track-id>...] [--all] [-sp|--system-player | -bp|--browser-player] <archive.mavc>
   mavc inspect <archive.mavc> [track-id]
@@ -45,18 +49,11 @@ Usage:
 - **`package <manifest.json> <输出.mavc>`** — 按 JSON 清单中的曲目信息打包。
 - **`music -m <文件>... [-a <输出.mavc>]`** — 打包音乐列表的快捷命令，初始权重均分（每首为 `1 / 曲目数`）。`-m` 和 `-a` 选项可以按任意顺序排列。
 - **`create <manifest.json> <输出.mavc>`** — 使用清单打包的别名命令。
-- **`--add` / `-+ <文件>... --to <归档>...`** — 向每个归档添加音频文件；更新后的归档最多包含 5 首曲目，音频数据总量不超过 150 MB。新曲目权重为 1。
-- **`--remove` / `-x <曲目编号>... --from <归档>...`** — 从每个归档删除至少两个指定编号的曲目。
+- **`do --add` / `do -+ <文件>... --to <归档>...`** — 向每个归档添加音频文件；新曲目权重为 1。
+- **`do --remove` / `do -x <曲目编号>... --from <归档>...`** — 从每个归档删除一个或多个指定编号的曲目。
 
-归档限制从当前工作目录的 `mavc` 读取。文件不存在时，默认最多 5 首、150 MB。配置示例：
+已移除曲目数量与音频容量限制。新增用 `--to` 指定归档，删除用 `--from` 指定来源。目标选项可以重复使用，旧的顶层新增／删除命令仍兼容。
 
-```toml
-[limits]
-max_tracks = 5
-max_size_mb = 150
-```
-
-`max_size_mb` 使用十进制 MB（1 MB = 1,000,000 字节），限制的是音频数据总量。
 - **`list <归档.mavc>`** — 列出曲目编号、格式和权重。
 - **`play [-r|--random] <归档.mavc>`** — 按曲目权重随机选择，并使用 MAVC 内置播放器播放。随机播放为默认模式。
 - **`play -o|--one <曲目编号> <归档.mavc>`** — 播放指定编号的曲目。
@@ -221,3 +218,41 @@ Tauri 配置会通过 `dx serve --port 1420 --interactive false` 启动 Dioxus �
 ## 许可证
 
 MAVC 使用 Apache License 2.0 授权，详见 [LICENSE](LICENSE)。
+
+
+### Remove and export / 移除並匯出
+
+```sh
+mavc do -x 0 1 --from archive.mavc --to ./export
+mavc do --remove 0 --from a.mavc b.mavc --to ./export ./backup
+```
+
+`--to` is optional. Songs are exported using their original filenames before removal.
+Export directories are created as needed. Existing files and duplicate output names cause an error,
+leaving the archives unchanged. All exports must succeed before removal begins.
+Use `--from` for source archives and `--to` for export directories.
+
+`--to` 可省略；指定後會先以原檔名匯出歌曲，全部匯出成功後才移除。
+自動建立目錄；遇到已有檔案、輸出檔名衝突或匯出失敗時，保留歸檔中的歌曲。
+
+
+### 帮助语言
+
+帮助提供英语（默认／回退）、中文（简体与繁体）、日文、西班牙语和德语。依次读取 `LC_ALL`、
+`LANGUAGE`（冒号分隔列表的首个偏好）、`LC_MESSAGES`、`LANG`；没有设置时，
+在 macOS／Windows 上读取系统界面语言。`C`／`POSIX` 环境强制使用英语；
+不支持的语言也回退到英语。命令名、选项及路径占位符保持不变。
+适用于 `--help`、`help`、子命令帮助及无参数时显示的帮助。
+
+```sh
+LC_ALL=en_US.UTF-8 mavc --help
+LC_ALL=zh_CN.UTF-8 mavc do --help
+LC_ALL=ja_JP.UTF-8 mavc do --remove --help
+LC_ALL=es_ES.UTF-8 mavc do --help
+LC_ALL=de_DE.UTF-8 mavc do --help
+```
+
+
+中文帮助根据系统语言选择：`zh_CN`、`zh_SG`、`zh-Hans` 使用简体；
+`zh_TW`、`zh_HK`、`zh_MO`、`zh-Hant` 使用繁体。
+明确指定 Hans／Hant 时优先于地区；只有 `zh` 时默认简体。
